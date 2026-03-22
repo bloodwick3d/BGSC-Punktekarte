@@ -60,6 +60,7 @@ import kotlin.math.roundToInt
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -67,10 +68,13 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         }
+        
         window.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
+        
         enableEdgeToEdge()
         setContent { 
             val viewModel: GolfViewModel = viewModel()
@@ -98,13 +102,28 @@ class MainActivity : ComponentActivity() {
         } else {
             windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
         }
+        
+        setContent { 
+            val viewModel: GolfViewModel = viewModel()
+            val context = LocalContext.current
+            
+            CompositionLocalProvider(
+                LocalContext provides LanguageHelper.setLocale(context, viewModel.currentLanguage)
+            ) {
+                MiniGolfTheme { 
+                    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
+                        MiniGolfApp(viewModel) 
+                    } 
+                }
+            }
+        }
     }
 }
 
 data class FlyingScoreInfo(val score: Int?, val start: Offset, val end: Offset, val playerIndex: Int, val roundIndex: Int, val holeIndex: Int)
 
 @Composable
-fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
+fun MiniGolfApp(viewModel: GolfViewModel) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
@@ -134,6 +153,7 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
     val allFilled = remember(players) { players.isNotEmpty() && players.all { p -> p.roundScores.all { rs -> rs.all { it != null } } } }
 
     LaunchedEffect(allFilled) { if (allFilled) { delay(800); showWinnerDialog = true } }
+    
     LaunchedEffect(viewModel.keepScreenOn) {
         (context as? Activity)?.window?.let { window ->
             if (viewModel.keepScreenOn) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -194,7 +214,6 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
                             })
                         }
                         
-                        // Update Dialog
                         viewModel.updateAvailable?.let { info ->
                             AlertDialog(
                                 onDismissRequest = { if (!viewModel.isDownloadingUpdate) viewModel.updateAvailable = null },
@@ -210,7 +229,7 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
                                         if (viewModel.isDownloadingUpdate) {
                                             Spacer(modifier = Modifier.height(16.dp))
                                             LinearProgressIndicator(progress = { viewModel.downloadProgress }, modifier = Modifier.fillMaxWidth())
-                                            Text("${(viewModel.downloadProgress * 100).toInt()}%", modifier = Modifier.align(Alignment.End), style = shadowStyle.copy(fontSize = 11.sp))
+                                            Text(stringResource(R.string.percentage_format, (viewModel.downloadProgress * 100).toInt()), modifier = Modifier.align(Alignment.End), style = shadowStyle.copy(fontSize = 11.sp))
                                         }
                                     }
                                 },
@@ -258,12 +277,12 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
                                 hapticEnabled = viewModel.hapticEnabled,
                                 soundEnabled = viewModel.soundEnabled,
                                 keepScreenOn = viewModel.keepScreenOn,
-                                fullScreenEnabled = viewModel.fullScreenEnabled,
+                                currentLanguage = viewModel.currentLanguage,
                                 shadowStyle = shadowStyle,
                                 onHapticToggle = { viewModel.toggleHaptic(it) },
                                 onSoundToggle = { viewModel.soundEnabled = it; viewModel.toggleSound(it) },
                                 onKeepScreenOnToggle = { viewModel.toggleKeepScreenOn(it) },
-                                onFullScreenToggle = { viewModel.toggleFullScreen(it) },
+                                onLanguageChange = { viewModel.setLanguage(it) },
                                 onDismiss = { showSettingsDialog = false },
                                 onShowInfo = { showSettingsDialog = false; showInfoDialog = true }
                             )

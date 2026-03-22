@@ -23,7 +23,7 @@ data class TournamentNoteResult(
     val system: String,
     
     @SerializedName("notesJson")
-    val notesJson: String // Serialisierte Liste von HoleNote
+    val notesJson: String
 )
 
 class TournamentConverters {

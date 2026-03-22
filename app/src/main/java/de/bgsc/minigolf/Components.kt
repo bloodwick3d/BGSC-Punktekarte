@@ -31,6 +31,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -45,13 +46,11 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-// Definition der Calibri FontFamily
 val CalibriFontFamily = FontFamily(
     Font(R.font.calibri, FontWeight.Normal),
     Font(R.font.calibri_bold, FontWeight.Bold)
 )
 
-// Erstellt ein Typography-Objekt, das Calibri als Standard verwendet
 val CalibriTypography = Typography().run {
     copy(
         displayLarge = displayLarge.copy(fontFamily = CalibriFontFamily),
@@ -72,10 +71,6 @@ val CalibriTypography = Typography().run {
     )
 }
 
-/**
- * Ein verallgemeinerter Click-Modifier, der automatisch Sound und Haptik abspielt,
- * sofern dies in den Einstellungen aktiviert ist.
- */
 @Composable
 fun Modifier.golfClickable(
     hapticType: HapticFeedbackType = HapticFeedbackType.LongPress,
@@ -96,12 +91,10 @@ fun Modifier.golfClickable(
     )
 }
 
-/**
- * Ein Modifier, der sowohl Klick als auch Long-Press unterstützt (mit Sound & Haptik).
- */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Modifier.golfCombinedClickable(
+    hapticType: HapticFeedbackType = HapticFeedbackType.LongPress,
     enabled: Boolean = true,
     viewModel: GolfViewModel = viewModel(),
     onLongClick: (() -> Unit)? = null,
@@ -114,23 +107,19 @@ fun Modifier.golfCombinedClickable(
         enabled = enabled,
         onClick = {
             if (viewModel.soundEnabled) sound.playClick()
-            if (viewModel.hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            if (viewModel.hapticEnabled) haptic.performHapticFeedback(hapticType)
             onClick()
         },
         onLongClick = onLongClick?.let {
             {
                 if (viewModel.soundEnabled) sound.playClick()
-                if (viewModel.hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                if (viewModel.hapticEnabled) haptic.performHapticFeedback(hapticType)
                 it()
             }
         }
     )
 }
 
-/**
- * Eine Hilfsfunktion für onClick-Lambdas, die Sound und Haptik auslöst,
- * sofern dies in den Einstellungen aktiviert ist.
- */
 @Composable
 fun golfClick(
     hapticType: HapticFeedbackType = HapticFeedbackType.LongPress,
@@ -275,6 +264,7 @@ fun FireworkEffect(visible: Boolean) {
 @Composable
 fun TickerText(value: Int, style: TextStyle, color: Color) {
     var displayValue by remember { mutableIntStateOf(0) }
+    val pktSuffix = stringResource(R.string.history_pkt_suffix)
     LaunchedEffect(value) {
         val startValue = displayValue
         val duration = 1000L
@@ -286,7 +276,7 @@ fun TickerText(value: Int, style: TextStyle, color: Color) {
         }
         displayValue = value
     }
-    Text(text = "$displayValue Pkt.", style = style.copy(fontFamily = CalibriFontFamily), color = color)
+    Text(text = stringResource(R.string.score_with_suffix, displayValue, pktSuffix), style = style.copy(fontFamily = CalibriFontFamily), color = color)
 }
 
 @Composable
@@ -346,7 +336,7 @@ fun WinnerCard(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.Share, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
-                            Icon(Icons.Default.Share, contentDescription = "Teilen", tint = Color.Black)
+                            Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share_title), tint = Color.Black)
                         }
                     }
                 }
@@ -368,12 +358,12 @@ fun WinnerCard(
                         )
                     }
                     Spacer(Modifier.height(8.adaptiveDp()))
-                    Text("Herzlichen Glückwunsch!", fontWeight = FontWeight.Bold, fontSize = 20.adaptiveSp(), textAlign = TextAlign.Center, style = shadowStyle)
+                    Text(stringResource(R.string.winner_title), fontWeight = FontWeight.Bold, fontSize = 20.adaptiveSp(), textAlign = TextAlign.Center, style = shadowStyle)
                     Text(selectedSystem.replace("\n", " "), fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
                     Spacer(Modifier.height(16.adaptiveDp()))
                     winners.forEach { Text(it.name, fontSize = 24.adaptiveSp(), fontWeight = FontWeight.ExtraBold, color = it.color, textAlign = TextAlign.Center, style = shadowStyle.copy(color = it.color)) }
-                    Text(if(winners.size > 1) "haben gewonnen!" else "hat gewonnen!", fontSize = 16.adaptiveSp(), style = shadowStyle)
-                    Spacer(Modifier.height(24.adaptiveDp())); Text("Rangliste:", fontWeight = FontWeight.Bold, fontSize = 18.adaptiveSp(), style = shadowStyle)
+                    Text(stringResource(R.string.winner_subtitle), fontSize = 16.adaptiveSp(), style = shadowStyle)
+                    Spacer(Modifier.height(24.adaptiveDp())); Text(stringResource(R.string.history_title), fontWeight = FontWeight.Bold, fontSize = 18.adaptiveSp(), style = shadowStyle)
                     sortedPlayers.forEachIndexed { idx, player ->
                         var itemVisible by remember { mutableStateOf(isSharing) }
                         LaunchedEffect(Unit) { if(!isSharing) { delay(idx * 200L + 500L); itemVisible = true } }
@@ -381,24 +371,25 @@ fun WinnerCard(
                             val total = player.roundScores.flatten().filterNotNull().sum()
                             val isFullGame = player.roundScores.all { rs -> rs.all { it != null } }
                             val totalColor = if (isFullGame) getScoreColor(total, selectedSystem, Color.Black, numRounds) else Color.Black
+                            val pktSuffix = stringResource(R.string.history_pkt_suffix)
                             
                             Row(Modifier.fillMaxWidth().padding(vertical = 8.adaptiveDp()), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("${idx + 1}. ${player.name}", fontWeight = FontWeight.Bold, color = player.color, fontSize = 18.adaptiveSp(), style = shadowStyle.copy(color = player.color))
+                                    Text(stringResource(R.string.player_rank_format, idx + 1, player.name), fontWeight = FontWeight.Bold, color = player.color, fontSize = 18.adaptiveSp(), style = shadowStyle.copy(color = player.color))
                                     if (numRounds > 1) {
                                         Row {
-                                            Text("Runden: ", fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
+                                            Text(stringResource(R.string.history_rounds_label), fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
                                             player.roundScores.forEachIndexed { rIdx, round ->
                                                 val rSum = round.filterNotNull().sum()
                                                 val isRoundFull = round.all { it != null }
                                                 val rColor = if (isRoundFull) getScoreColor(rSum, selectedSystem, Color.DarkGray, 1) else Color.DarkGray
                                                 Text(rSum.toString(), fontSize = 12.adaptiveSp(), color = rColor, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = rColor))
-                                                if (rIdx < numRounds - 1) Text(" | ", fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
+                                                if (rIdx < numRounds - 1) Text(stringResource(R.string.round_separator), fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
                                             }
                                         }
                                     }
                                 }
-                                if (isSharing) Text("$total Pkt.", fontWeight = FontWeight.ExtraBold, color = totalColor, fontSize = 18.adaptiveSp(), style = shadowStyle.copy(color = totalColor))
+                                if (isSharing) Text(stringResource(R.string.score_with_suffix, total, pktSuffix), fontWeight = FontWeight.ExtraBold, color = totalColor, fontSize = 18.adaptiveSp(), style = shadowStyle.copy(color = totalColor))
                                 else TickerText(total, shadowStyle.copy(fontWeight = FontWeight.ExtraBold, fontSize = 18.adaptiveSp()), totalColor)
                             }
                         }
@@ -419,7 +410,7 @@ fun WinnerCard(
                                         Icon(Icons.Default.AddCircleOutline, null, tint = Color.Black.copy(alpha = 0.3f), modifier = Modifier.offset(1.dp, 1.dp))
                                         Icon(Icons.Default.AddCircleOutline, null)
                                     }
-                                    Spacer(Modifier.width(4.adaptiveDp())); Text("Nächste Runde", fontSize = 12.adaptiveSp(), style = shadowStyle) 
+                                    Spacer(Modifier.width(4.adaptiveDp())); Text(stringResource(R.string.menu_next_round), fontSize = 12.adaptiveSp(), style = shadowStyle)
                                 }
                             }
                             Button(
@@ -434,7 +425,7 @@ fun WinnerCard(
                                         Icon(Icons.Default.Refresh, null, tint = Color.Black.copy(alpha = 0.3f), modifier = Modifier.offset(1.dp, 1.dp))
                                         Icon(Icons.Default.Refresh, null)
                                     }
-                                    Spacer(Modifier.width(4.adaptiveDp())); Text("Neu starten", fontSize = 12.adaptiveSp(), style = shadowStyle) 
+                                    Spacer(Modifier.width(4.adaptiveDp())); Text(stringResource(R.string.menu_restart), fontSize = 12.adaptiveSp(), style = shadowStyle)
                                 }
                         }
                         Spacer(Modifier.height(12.adaptiveDp()))
@@ -449,7 +440,7 @@ fun WinnerCard(
                                 Icon(Icons.Default.Stop, null, tint = Color.Black.copy(alpha = 0.3f), modifier = Modifier.offset(1.dp, 1.dp))
                                 Icon(Icons.Default.Stop, null)
                             }
-                            Spacer(Modifier.width(8.dp)); Text("Spiel beenden", style = shadowStyle)
+                            Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.menu_end_game), style = shadowStyle)
                         }
                     } else { Spacer(Modifier.height(16.adaptiveDp())); Image(painterResource(R.drawable.bgsc_logo), null, Modifier.size(60.adaptiveDp())) }
                 }

@@ -8,10 +8,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * Berechnet einen DP-Wert proportional zur Breite des aktuellen Fensters.
- * Referenz ist eine Breite von 360dp.
- */
 @Composable
 fun Int.adaptiveDp(): Dp {
     val density = LocalDensity.current
@@ -28,9 +24,6 @@ fun Double.adaptiveDp(): Dp {
     return (this.toFloat() * (screenWidthDp.value / 360f)).dp
 }
 
-/**
- * Berechnet einen SP-Wert proportional zur Breite des aktuellen Fensters.
- */
 @Composable
 fun Int.adaptiveSp(): TextUnit {
     val density = LocalDensity.current

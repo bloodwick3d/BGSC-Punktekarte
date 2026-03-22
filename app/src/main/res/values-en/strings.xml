@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BGSC Scorecard</string>
+
+    <!-- Navigation & Menu -->
+    <string name="menu_add_player">Add Player</string>
+    <string name="menu_next_round">Next Round</string>
+    <string name="menu_restart">Restart</string>
+    <string name="menu_end_game">End Game</string>
+    <string name="menu_history">History</string>
+    <string name="menu_tournament_mode">Tournament Mode</string>
+    <string name="menu_results_card">Scorecard</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_info">Info</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_confirm_delete_round_title">Delete round?</string>
+    <string name="dialog_confirm_delete_round_text">Do you really want to delete this round? All points will be lost.</string>
+    <string name="dialog_save">Save</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_delete">Delete</string>
+    <string name="dialog_add">Add</string>
+    <string name="dialog_delete_round_confirm_text_extended">Do you really want to delete round %1$d? All points entered for this round will be lost.</string>
+    <string name="dialog_edit_player_title">Edit Player</string>
+    <string name="dialog_add_player_title">Add Player</string>
+    <string name="dialog_player_name_label">Name</string>
+    <string name="dialog_player_color_label">Color</string>
+    <string name="dialog_remove_player">Remove</string>
+
+    <!-- Settings -->
+    <string name="settings_vibration">Vibration</string>
+    <string name="settings_sound">Touch Sound</string>
+    <string name="settings_keep_screen_on">Keep Screen On</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_btn_done">Done</string>
+
+    <!-- Common Symbols & Formats -->
+    <string name="column_header_number">#</string>
+    <string name="round_separator"> | </string>
+    <string name="percentage_format">%1$d%%</string>
+    <string name="player_rank_format">%1$d. %2$s</string>
+    <string name="score_with_suffix">%1$d %2$s</string>
+
+    <!-- Update System -->
+    <string name="update_available_title">Update available!</string>
+    <string name="update_available_message">A new version (%1$s) is available. Would you like to install it now?</string>
+    <string name="update_download_later">Later</string>
+    <string name="update_download_now">Download Update</string>
+    <string name="update_changes_label">Changes:</string>
+    <string name="update_error_check">Error checking for updates: %1$s</string>
+    <string name="update_up_to_date">App is up to date.</string>
+
+    <!-- History Screen -->
+    <string name="history_title">Game History</string>
+    <string name="history_search_placeholder">Search&#8230;</string>
+    <string name="history_empty_state">No games saved yet</string>
+    <string name="history_no_results">No results</string>
+    <string name="history_delete_confirm_title">Delete result?</string>
+    <string name="history_delete_confirm_text">Do you really want to permanently delete this game result?</string>
+    <string name="history_pkt_suffix">Pts.</string>
+    <string name="history_rounds_label">Rounds: </string>
+    <string name="history_search_close">Close</string>
+    <string name="history_search_clear">Clear Search</string>
+    <string name="history_search_icon_desc">Search</string>
+
+    <!-- Tournament Screen -->
+    <string name="tournament_title_new">Create Note</string>
+    <string name="tournament_title_edit">Edit Note</string>
+    <string name="tournament_location_label">Location</string>
+    <string name="tournament_system_label">System Type</string>
+    <string name="tournament_save_success">Notes saved</string>
+    <string name="tournament_balls">Balls</string>
+    <string name="tournament_tee_off">Tee-off</string>
+    <string name="tournament_notes">Notes</string>
+    <string name="tournament_new_round">New Round</string>
+    <string name="tournament_round_label">Round %1$d</string>
+    <string name="tournament_selection_title">Tournament Notes</string>
+    <string name="tournament_btn_new">New Note</string>
+    <string name="tournament_btn_history">Saved Notes</string>
+    <string name="tournament_btn_export">Export</string>
+    <string name="tournament_btn_import">Import</string>
+    <string name="tournament_export_success">Export successful!</string>
+    <string name="tournament_import_success">%1$d notes imported!</string>
+    <string name="tournament_btn_new_subtitle">Create a new strategy</string>
+    <string name="tournament_btn_history_subtitle">View your strategies</string>
+    <string name="tournament_deactivate_confirm_title">Deactivate Tournament Mode?</string>
+    <string name="tournament_deactivate_confirm_text">Do you really want to deactivate Tournament Mode? You can reactivate it anytime via the menu.</string>
+    <string name="tournament_btn_deactivate">Deactivate</string>
+    <string name="tournament_theme_light">Light</string>
+    <string name="tournament_theme_dark">Dark</string>
+    <string name="tournament_theme_system">System</string>
+    <string name="tournament_back">Back</string>
+    <string name="tournament_easter_egg_steps">%1$d steps remaining&#8230;</string>
+    <string name="tournament_easter_egg_activated">Tournament Mode activated!</string>
+
+    <!-- Tournament History -->
+    <string name="tournament_history_title">Saved Notes</string>
+    <string name="tournament_history_empty">No tournament notes saved yet</string>
+    <string name="tournament_history_delete_title">Delete note?</string>
+    <string name="tournament_history_delete_text">Do you really want to delete the notes for \"%1$s\"?</string>
+    <string name="tournament_history_unknown_location">Unknown Location</string>
+
+    <!-- Bitmap Generator -->
+    <string name="bitmap_date_format">MM/dd/yyyy - HH:mm</string>
+
+    <!-- General / Systems -->
+    <string name="default_player_name">Player %1$d</string>
+    <string name="system_eternit">Miniature Golf (Eternit)</string>
+    <string name="system_beton">Minigolf (Concrete)</string>
+    <string name="system_filz">Felt Golf</string>
+    <string name="system_cobi">Cobigolf</string>
+    <string name="system_stern">Star Golf</string>
+    <string name="system_eternit_newline">Miniature Golf\n(Eternit)</string>
+    <string name="system_beton_newline">Minigolf\n(Concrete)</string>
+
+    <!-- Top Bar -->
+    <string name="top_bar_location_placeholder">Enter location&#8230;</string>
+    <string name="top_bar_logo_desc">Logo</string>
+
+    <!-- Navigation Drawer -->
+    <string name="drawer_club_name">BGSC \"Gut Schlag\"\nGladbeck e.V.</string>
+    <string name="drawer_copyright">© BGSC \"Gut Schlag\" Gladbeck e.V.</string>
+    <string name="drawer_credits">Created by Patrick</string>
+
+    <!-- Error Messages -->
+    <string name="error_import_empty">File is empty</string>
+    <string name="error_import_no_notes">No notes found</string>
+    <string name="error_import_entry_corrupt">Entry corrupt</string>
+    <string name="error_export_failed">Export failed.</string>
+    <string name="error_import_failed">Import failed: %1$s</string>
+    <string name="error_import_invalid">Import failed (invalid file?).</string>
+    <string name="error_unknown">Unknown</string>
+
+    <!-- Share -->
+    <string name="share_result">Result</string>
+    <string name="share_title">Share Result</string>
+
+    <!-- Winner Dialog -->
+    <string name="winner_title">Congratulations!</string>
+    <string name="winner_subtitle">The game has ended.</string>
+    <string name="winner_rank_1st">1st Place</string>
+    <string name="winner_rank_2nd">2nd Place</string>
+    <string name="winner_rank_3rd">3rd Place</string>
+    <string name="winner_btn_share">Share</string>
+    <string name="winner_btn_restart">Restart</string>
+    <string name="winner_btn_save_end">Save &amp; End</string>
+
+    <!-- Info Dialog -->
+    <string name="info_title">App Info</string>
+    <string name="info_version">App Version: %1$s</string>
+    <string name="info_developer">Developed for BGSC Castrop</string>
+    <string name="info_copyright">© 2024</string>
+    <string name="info_imprint_title">Imprint</string>
+    <string name="info_imprint_content">Information according to § 5 DDG\n\nBGSC \"Gut Schlag\" Gladbeck e.V.\nBohmertstraße 283\n45964 Gladbeck\n\nRepresented by the board:\n1st Chairman: \n2nd Chairman: \n\nContact:\nContact person: Patrick Kempken\nEmail: bloodwick3d@gmail.com\nPhone: \n\nRegister entry:\nEntry in the register of associations.\nRegister court: \nRegister number: \n\nResponsible for the content according to § 18 Abs. 2 MStV:\nPatrick Kempken</string>
+    <string name="info_privacy_title">Privacy Policy</string>
+    <string name="info_privacy_content">This app works locally. All scores and notes are stored exclusively on your device. No personal data is collected, analyzed, or shared with third parties. A connection to GitHub is only established when checking for updates to find the latest version.</string>
+    <string name="info_licenses_title">Licenses &amp; Open Source</string>
+    <string name="info_licenses_content">This app uses the following open-source libraries:\n\n• Android Jetpack &amp; Compose (Apache 2.0)\n• Material Design Components 3 (Apache 2.0)\n• Room Persistence Library (Apache 2.0)\n• Kotlin Standard Library (Apache 2.0)\n• Google Gson (Apache 2.0)\n• Square OkHttp (Apache 2.0)\n• AndroidX Core KTX &amp; Lifecycle (Apache 2.0)\n\nSpecial thanks to the open-source community for providing these great tools.</string>
+    <string name="info_expand">Expand</string>
+    <string name="info_collapse">Collapse</string>
+    <string name="info_btn_close">Close</string>
+</resources>
