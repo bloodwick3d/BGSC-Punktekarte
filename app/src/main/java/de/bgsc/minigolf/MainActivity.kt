@@ -84,7 +84,6 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
-            // Wir holen uns das ViewModel (falls möglich) oder nutzen den gespeicherten Preference-Wert
             val prefs = getSharedPreferences("minigolf_prefs", MODE_PRIVATE)
             val fullScreen = prefs.getBoolean("full_screen_enabled", true)
             applySystemBarsVisibility(fullScreen)
@@ -163,7 +162,14 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     Box(modifier = Modifier.fillMaxSize().then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && currentBlurRadius > 0.dp) Modifier.blur(currentBlurRadius) else Modifier).clipToBounds()) {
                         Image(painter = painterResource(id = R.drawable.bg_minigolf), contentDescription = null, modifier = Modifier.fillMaxSize().blur(15.dp), contentScale = ContentScale.Crop)
-                        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        
+                        // INSETS HANDLING: Hier wird der Inhalt verschoben, wenn Vollbild aus ist
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier), 
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             TopAppBar(
                                 selectedSystem = viewModel.selectedSystem, onSystemSelected = { viewModel.selectedSystem = it },
                                 currentLocation = viewModel.currentLocation, onLocationChanged = { viewModel.currentLocation = it },
