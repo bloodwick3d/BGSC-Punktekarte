@@ -38,7 +38,8 @@ class UpdateManager(private val context: Context) {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                onError(e.message ?: context.getString(R.string.error_unknown))
+                Log.e("UpdateManager", "Netzwerkfehler: ${e.message}")
+                onError(e.message ?: "Unbekannter Netzwerkfehler")
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -46,7 +47,8 @@ class UpdateManager(private val context: Context) {
                 val responseBody = body.string()
                 
                 if (!response.isSuccessful) {
-                    onError("GitHub: ${response.code}")
+                    Log.e("UpdateManager", "GitHub Fehler: ${response.code}")
+                    onError("GitHub Fehler: ${response.code}")
                     return
                 }
 
@@ -55,6 +57,8 @@ class UpdateManager(private val context: Context) {
                         val release = com.google.gson.Gson().fromJson(json, GitHubRelease::class.java)
                         val latestClean = release.tagName.lowercase().removePrefix("v").split("-")[0].trim()
                         val currentClean = currentVersion.lowercase().removePrefix("v").split("-")[0].trim()
+                        
+                        Log.i("UpdateManager", "VERGLEICH: Lokal [$currentClean] | GitHub [$latestClean]")
                         
                         if (latestClean == currentClean) {
                             onNoUpdate()
@@ -71,8 +75,9 @@ class UpdateManager(private val context: Context) {
                         } else {
                             onNoUpdate()
                         }
-                    } catch (_: Exception) {
-                        onError("JSON Error")
+                    } catch (e: Exception) {
+                        Log.e("UpdateManager", "Fehler bei Versionsprüfung: ${e.message}")
+                        onError("Datenfehler")
                     }
                 }
             }
@@ -98,7 +103,7 @@ class UpdateManager(private val context: Context) {
     fun downloadAndInstallApk(url: String, onProgress: (Float) -> Unit) {
         val request = Request.Builder().url(url).header("User-Agent", "MiniGolf-Score-App").build()
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { Log.e("UpdateManager", "Download Error") }
+            override fun onFailure(call: Call, e: IOException) { Log.e("UpdateManager", "Download Fehler: ${e.message}") }
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body
                 val updateDir = File(context.cacheDir, "updates")
@@ -120,7 +125,7 @@ class UpdateManager(private val context: Context) {
                         }
                     }
                     installApk(file)
-                } catch (e: Exception) { Log.e("UpdateManager", "Save Error", e) }
+                } catch (e: Exception) { Log.e("UpdateManager", "Speicherfehler: ${e.message}") }
             }
         })
     }
@@ -134,9 +139,12 @@ class UpdateManager(private val context: Context) {
                 setDataAndType(uri, "application/vnd.android.package-archive")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
             }
+
+            Log.i("UpdateManager", "Starte Installation für URI: $uri")
             context.startActivity(intent)
+            
         } catch (e: Exception) {
-            Log.e("UpdateManager", "Install failed", e)
+            Log.e("UpdateManager", "Installation fehlgeschlagen: ${e.message}", e)
         }
     }
 }

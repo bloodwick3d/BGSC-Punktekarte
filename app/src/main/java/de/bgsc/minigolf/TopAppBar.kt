@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -45,6 +44,7 @@ fun TopAppBar(
 ) {
     val focusManager = LocalFocusManager.current
     
+    // Überwachung der Tastatur-Sichtbarkeit
     val isKeyboardVisible = WindowInsets.isImeVisible
     LaunchedEffect(isKeyboardVisible) {
         if (!isKeyboardVisible) {
@@ -73,7 +73,7 @@ fun TopAppBar(
             )
             Image(
                 painter = painterResource(id = R.drawable.bgsc_logo),
-                contentDescription = stringResource(R.string.top_bar_logo_desc),
+                contentDescription = "Logo",
                 modifier = Modifier
                     .size(logoSize)
                     .scale(logoScale)
@@ -85,6 +85,7 @@ fun TopAppBar(
             
             Spacer(Modifier.width(12.adaptiveDp()))
             
+            // ORT EINGABEFELD
             Box(modifier = Modifier.weight(1f)) {
                 if (currentLocation.isEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -94,7 +95,7 @@ fun TopAppBar(
                         }
                         Spacer(Modifier.width(4.adaptiveDp()))
                         Text(
-                            stringResource(R.string.top_bar_location_placeholder),
+                            "Ort angeben...",
                             style = shadowStyle.copy(fontFamily = CalibriFontFamily, color = Color.White.copy(alpha = 0.5f), fontSize = (dynamicSystemFontSize.value * 0.8f).roundToInt().adaptiveSp())
                         )
                     }
@@ -159,11 +160,11 @@ fun TopAppBar(
                     modifier = Modifier.background(Color.White.copy(alpha = 0.8f))
                 ) {
                     listOf(
-                        stringResource(R.string.system_eternit_newline),
-                        stringResource(R.string.system_beton_newline),
-                        stringResource(R.string.system_filz),
-                        stringResource(R.string.system_cobi),
-                        stringResource(R.string.system_stern)
+                        "Miniaturgolf\n(Eternit)",
+                        "Minigolf\n(Beton)",
+                        "Filzgolf",
+                        "Cobigolf",
+                        "Sterngolf"
                     ).filter { it != selectedSystem }.forEach { system ->
                         DropdownMenuItem(
                             text = { 

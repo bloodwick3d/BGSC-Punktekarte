@@ -43,6 +43,7 @@ fun ScoreCircleMenu(
     val haptic = LocalHapticFeedback.current
     val sound = LocalSoundFeedback.current
     
+    // Animation states for the background and buttons
     val bgAlpha = remember { Animatable(0f) }
     val buttonAnims = remember { List(8) { Animatable(0f) } }
 
@@ -71,6 +72,7 @@ fun ScoreCircleMenu(
         val screenWidth = with(density) { maxWidth.toPx() }
         val screenHeight = with(density) { maxHeight.toPx() }
         
+        // Skalierung auf 85% der Bildschirmbreite (adaptiv)
         val menuSize = maxWidth * 0.85f
         val menuSizePx = with(density) { menuSize.toPx() }
         val halfMenuSize = menuSizePx / 2f
@@ -78,9 +80,11 @@ fun ScoreCircleMenu(
         val buttonSize = menuSize * 0.24f
         val radius = (menuSize.value * 0.32f).dp 
 
+        // Horizontal zentrieren, Vertikal am Klick-Offset orientieren
         val posX = (screenWidth - menuSizePx) / 2f
         var posY = menuOffset.y - halfMenuSize
 
+        // Sicherstellen, dass das Menü vertikal im Bildschirm bleibt
         posY = posY.coerceIn(0f, screenHeight - menuSizePx)
 
         Box(

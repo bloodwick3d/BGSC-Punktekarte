@@ -24,7 +24,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -86,8 +85,8 @@ fun HistoryScreen(
     currentItemToDelete?.let { result ->
         AlertDialog(
             onDismissRequest = { itemToDeleteState.value = null },
-            title = { Text(stringResource(R.string.history_delete_confirm_title), color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
-            text = { Text(stringResource(R.string.history_delete_confirm_text), style = shadowStyle.copy(color = Color.Black)) },
+            title = { Text("Ergebnis löschen?", color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
+            text = { Text("Möchtest du dieses Spielergebnis wirklich unwiderruflich löschen?", style = shadowStyle.copy(color = Color.Black)) },
             confirmButton = {
                 Button(
                     onClick = golfClick {
@@ -98,7 +97,7 @@ fun HistoryScreen(
                     shape = buttonShape,
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                 ) {
-                    Text(stringResource(R.string.dialog_delete), color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
+                    Text("Löschen", color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
                 }
             },
             dismissButton = {
@@ -108,7 +107,7 @@ fun HistoryScreen(
                     shape = buttonShape,
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                 ) {
-                    Text(stringResource(R.string.dialog_cancel), color = Color.Black, style = shadowStyle.copy(color = Color.Black))
+                    Text("Abbrechen", color = Color.Black, style = shadowStyle.copy(color = Color.Black))
                 }
             },
             containerColor = Color.White,
@@ -119,6 +118,7 @@ fun HistoryScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // Header
             Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background, shadowElevation = 4.dp) {
                 Column {
                     Row(
@@ -131,35 +131,35 @@ fun HistoryScreen(
                                 IconButton(onClick = golfClick { onBack() }) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
-                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.dialog_cancel))
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                                     }
                                 }
                                 Spacer(Modifier.width(8.adaptiveDp()))
-                                Text(stringResource(R.string.history_title), fontSize = 20.adaptiveSp(), fontWeight = FontWeight.Bold, style = shadowStyle)
+                                Text("Spiel-Historie", fontSize = 20.adaptiveSp(), fontWeight = FontWeight.Bold, style = shadowStyle)
                             }
                             IconButton(onClick = golfClick { isSearchExpanded = true }) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Search, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
-                                    Icon(Icons.Default.Search, contentDescription = stringResource(R.string.history_search_icon_desc))
+                                    Icon(Icons.Default.Search, contentDescription = "Suchen")
                                 }
                             }
                         } else {
                             IconButton(onClick = golfClick { isSearchExpanded = false; searchQuery = "" }) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.history_search_close))
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Schließen")
                                 }
                             }
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
                                 modifier = Modifier.weight(1f).focusRequester(focusRequester),
-                                placeholder = { Text(stringResource(R.string.history_search_placeholder), fontFamily = CalibriFontFamily) },
+                                placeholder = { Text("Suchen...", fontFamily = CalibriFontFamily) },
                                 trailingIcon = {
                                     IconButton(onClick = golfClick { if (searchQuery.isNotEmpty()) searchQuery = "" else isSearchExpanded = false }) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(Icons.Default.Close, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
-                                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.history_search_clear))
+                                            Icon(Icons.Default.Close, contentDescription = "Suche beenden")
                                         }
                                     }
                                 },
@@ -171,7 +171,6 @@ fun HistoryScreen(
                             )
                         }
                     }
-                    
                     AnimatedVisibility(visible = isSearchExpanded && history.isNotEmpty(), enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                         val suggestions = remember(history, searchQuery) {
                             val converters = Converters()
@@ -211,7 +210,7 @@ fun HistoryScreen(
                                 Icon(Icons.Default.History, contentDescription = null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(64.adaptiveDp()))
                             }
                             Spacer(Modifier.height(16.adaptiveDp()))
-                            Text(if (searchQuery.isEmpty()) stringResource(R.string.history_empty_state) else stringResource(R.string.history_no_results), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
+                            Text(if (searchQuery.isEmpty()) "Noch keine Spiele gespeichert" else "Keine Ergebnisse", color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
                         }
                     }
                 } else {
@@ -342,7 +341,6 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
                 players.forEach { player ->
                     val allRoundsFull = player.roundIsFull.isNotEmpty() && player.roundIsFull.all { it }
                     val totalColor = if (allRoundsFull || result.isFullGame) getScoreColor(player.totalScore, result.system, Color.Black, player.rounds.size) else Color.Black
-                    val pktSuffix = stringResource(R.string.history_pkt_suffix)
                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.adaptiveDp())) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -350,16 +348,16 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
                                 Spacer(Modifier.width(4.dp))
                                 Text(player.name, color = Color(player.colorInt), fontWeight = FontWeight.Bold, fontSize = 16.adaptiveSp(), style = shadowStyle.copy(color = Color(player.colorInt)))
                             }
-                            Text(stringResource(R.string.score_with_suffix, player.totalScore, pktSuffix), fontWeight = FontWeight.ExtraBold, color = totalColor, fontSize = 18.adaptiveSp(), style = shadowStyle.copy(color = totalColor))
+                            Text("${player.totalScore} Pkt.", fontWeight = FontWeight.ExtraBold, color = totalColor, fontSize = 18.adaptiveSp(), style = shadowStyle.copy(color = totalColor))
                         }
                         if (player.rounds.size > 1) {
                             Row(modifier = Modifier.padding(start = 18.adaptiveDp()), verticalAlignment = Alignment.CenterVertically) {
-                                Text(stringResource(R.string.history_rounds_label), fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
+                                Text("Runden: ", fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
                                 player.rounds.forEachIndexed { rIdx, rSum ->
                                     val isThisRoundFull = player.roundIsFull.getOrNull(rIdx) ?: result.isFullGame
                                     val rColor = if (isThisRoundFull) getScoreColor(rSum, result.system, Color.DarkGray, 1) else Color.DarkGray
                                     Text(rSum.toString(), fontSize = 12.adaptiveSp(), color = rColor, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = rColor))
-                                    if (rIdx < player.rounds.size - 1) Text(stringResource(R.string.round_separator), fontSize = 12.adaptiveSp(), color = Color.Gray, fontFamily = CalibriFontFamily)
+                                    if (rIdx < player.rounds.size - 1) Text(" | ", fontSize = 12.adaptiveSp(), color = Color.Gray, fontFamily = CalibriFontFamily)
                                 }
                             }
                         }

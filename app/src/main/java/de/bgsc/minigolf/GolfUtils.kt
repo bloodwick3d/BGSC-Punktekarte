@@ -14,34 +14,37 @@ fun getScoreColor(total: Int, system: String, defaultColor: Color, rounds: Int =
     return when {
         system.contains("Eternit") -> {
             when {
-                total in (18 * rounds)..(19 * rounds) -> Color(0xFF2196F3) 
-                total in (20 * rounds)..(24 * rounds) -> Color(0xFF4CAF50) 
-                total in (25 * rounds)..(29 * rounds) -> Color(0xFFF44336) 
-                total >= (30 * rounds) -> Color.Black 
+                total in (18 * rounds)..(19 * rounds) -> Color(0xFF2196F3) // Blau
+                total in (20 * rounds)..(24 * rounds) -> Color(0xFF4CAF50) // Grün
+                total in (25 * rounds)..(29 * rounds) -> Color(0xFFF44336) // Rot
+                total >= (30 * rounds) -> Color.Black // Schwarz
                 else -> defaultColor
             }
         }
         system.contains("Beton") -> {
             when {
-                total in (18 * rounds)..(24 * rounds) -> Color(0xFF2196F3) 
-                total in (25 * rounds)..(29 * rounds) -> Color(0xFF4CAF50) 
-                total in (30 * rounds)..(35 * rounds) -> Color(0xFFF44336) 
-                total >= (36 * rounds) -> Color.Black 
+                total in (18 * rounds)..(24 * rounds) -> Color(0xFF2196F3) // Blau
+                total in (25 * rounds)..(29 * rounds) -> Color(0xFF4CAF50) // Grün
+                total in (30 * rounds)..(35 * rounds) -> Color(0xFFF44336) // Rot
+                total >= (36 * rounds) -> Color.Black // Schwarz
                 else -> defaultColor
             }
         }
-        else -> { 
+        else -> { // Filzgolf, Cobigolf und Sterngolf
             when {
-                total in (18 * rounds)..(29 * rounds) -> Color(0xFF2196F3) 
-                total in (30 * rounds)..(35 * rounds) -> Color(0xFF4CAF50) 
-                total in (36 * rounds)..(39 * rounds) -> Color(0xFFF44336) 
-                total >= (40 * rounds) -> Color.Black 
+                total in (18 * rounds)..(29 * rounds) -> Color(0xFF2196F3) // Blau
+                total in (30 * rounds)..(35 * rounds) -> Color(0xFF4CAF50) // Grün
+                total in (36 * rounds)..(39 * rounds) -> Color(0xFFF44336) // Rot
+                total >= (40 * rounds) -> Color.Black // Schwarz
                 else -> defaultColor
             }
         }
     }
 }
 
+/**
+ * Teilt ein GameResult, indem es zuerst das Bitmap generiert und dann den Share-Intent startet.
+ */
 fun shareGameResult(context: Context, result: GameResult) {
     val bitmap = generateResultBitmap(context, result)
     shareBitmap(context, bitmap)
@@ -55,6 +58,7 @@ fun shareBitmap(context: Context, bitmap: Bitmap) {
     bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
     stream.close()
     
+    // Dynamische Authority-ID nutzen (funktioniert für Debug und Release)
     val authority = "${context.packageName}.fileprovider"
     val contentUri: Uri = FileProvider.getUriForFile(context, authority, imageFile)
     
@@ -62,9 +66,10 @@ fun shareBitmap(context: Context, bitmap: Bitmap) {
         action = Intent.ACTION_SEND
         putExtra(Intent.EXTRA_STREAM, contentUri)
         type = "image/png"
-        clipData = ClipData.newRawUri(context.getString(R.string.share_result), contentUri)
+        // WICHTIG für die Vorschau:
+        clipData = ClipData.newRawUri("Ergebnis", contentUri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     
-    context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_title)))
+    context.startActivity(Intent.createChooser(shareIntent, "Ergebnis teilen"))
 }
