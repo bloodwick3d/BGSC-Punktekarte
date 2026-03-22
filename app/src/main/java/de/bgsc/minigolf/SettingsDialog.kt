@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -32,10 +34,12 @@ fun AppSettingsDialog(
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     keepScreenOn: Boolean,
+    fullScreenEnabled: Boolean,
     shadowStyle: TextStyle,
     onHapticToggle: (Boolean) -> Unit,
     onSoundToggle: (Boolean) -> Unit,
     onKeepScreenOnToggle: (Boolean) -> Unit,
+    onFullScreenToggle: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     onShowInfo: () -> Unit
 ) {
@@ -50,7 +54,7 @@ fun AppSettingsDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Einstellungen",
+                    stringResource(R.string.settings_title),
                     color = Color.Black,
                     style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)
                 )
@@ -80,23 +84,30 @@ fun AppSettingsDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SettingsSwitchRow(
                     icon = Icons.Default.Vibration,
-                    text = "Vibration",
+                    text = stringResource(R.string.settings_vibration),
                     checked = hapticEnabled,
                     onCheckedChange = { onHapticToggle(it) },
                     shadowStyle = shadowStyle
                 )
                 SettingsSwitchRow(
                     icon = Icons.AutoMirrored.Filled.VolumeUp,
-                    text = "Touch-Sound",
+                    text = stringResource(R.string.settings_sound),
                     checked = soundEnabled,
                     onCheckedChange = { onSoundToggle(it) },
                     shadowStyle = shadowStyle
                 )
                 SettingsSwitchRow(
                     icon = Icons.Default.BrightnessHigh,
-                    text = "Wachbleiben",
+                    text = stringResource(R.string.settings_keep_screen_on),
                     checked = keepScreenOn,
                     onCheckedChange = { onKeepScreenOnToggle(it) },
+                    shadowStyle = shadowStyle
+                )
+                SettingsSwitchRow(
+                    icon = Icons.Default.Fullscreen,
+                    text = stringResource(R.string.settings_full_screen),
+                    checked = fullScreenEnabled,
+                    onCheckedChange = { onFullScreenToggle(it) },
                     shadowStyle = shadowStyle
                 )
             }
@@ -115,7 +126,7 @@ fun AppSettingsDialog(
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                     }
                     Spacer(Modifier.width(8.dp))
-                    Text("Fertig", style = shadowStyle)
+                    Text(stringResource(R.string.dialog_finish), style = shadowStyle)
                 }
             }
         }
@@ -128,7 +139,7 @@ fun AppInfoDialog(appVersion: String, shadowStyle: TextStyle, onDismiss: () -> U
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("App-Info", color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
+        title = { Text(stringResource(R.string.settings_info_title), color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
         containerColor = Color.White.copy(alpha = 0.4f),
         tonalElevation = 0.dp,
         text = {
@@ -199,7 +210,7 @@ fun AppInfoDialog(appVersion: String, shadowStyle: TextStyle, onDismiss: () -> U
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Schließen", style = shadowStyle)
+                Text(stringResource(R.string.dialog_close), style = shadowStyle)
             }
         }
     )

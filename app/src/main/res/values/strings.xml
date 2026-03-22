@@ -19,11 +19,16 @@
     <string name="dialog_cancel">Abbrechen</string>
     <string name="dialog_delete">Löschen</string>
     <string name="dialog_add">Hinzufügen</string>
+    <string name="dialog_finish">Fertig</string>
+    <string name="dialog_close">Schließen</string>
 
     <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
     <string name="settings_vibration">Vibration</string>
     <string name="settings_sound">Touch-Sound</string>
     <string name="settings_keep_screen_on">Wachbleiben</string>
+    <string name="settings_full_screen">Vollbildmodus</string>
+    <string name="settings_info_title">App-Info</string>
 
     <!-- Update System -->
     <string name="update_available_title">Update verfügbar!</string>
@@ -33,4 +38,18 @@
     <string name="update_changes_label">Änderungen:</string>
     <string name="update_error_check">Fehler beim Update-Check: %1$s</string>
     <string name="update_up_to_date">App ist auf dem neuesten Stand.</string>
+    <string name="update_download_progress">Lade herunter&#8230; %1$d%%</string>
+
+    <!-- Tournament -->
+    <string name="tournament_new_note">Notiz erstellen</string>
+    <string name="tournament_edit_note">Notiz bearbeiten</string>
+    <string name="tournament_history">Gespeicherte Notizen</string>
+    <string name="tournament_location_label">Ort</string>
+    <string name="tournament_system_label">Anlagentyp</string>
+    <string name="tournament_export">Export</string>
+    <string name="tournament_import">Import</string>
+
+    <!-- UI Labels -->
+    <string name="label_enter_location">Ort angeben&#8230;</string>
+    <string name="label_search_hint">Suchen&#8230;</string>
 </resources>

@@ -72,12 +72,33 @@ class MainActivity : ComponentActivity() {
             window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
         enableEdgeToEdge()
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.let { controller ->
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            controller.hide(WindowInsetsCompat.Type.systemBars())
+        setContent { 
+            val viewModel: GolfViewModel = viewModel()
+            LaunchedEffect(viewModel.fullScreenEnabled) {
+                applySystemBarsVisibility(viewModel.fullScreenEnabled)
+            }
+            MiniGolfTheme { Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { MiniGolfApp(viewModel) } } 
         }
-        setContent { MiniGolfTheme { Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { MiniGolfApp() } } }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            // Wir holen uns das ViewModel (falls möglich) oder nutzen den gespeicherten Preference-Wert
+            val prefs = getSharedPreferences("minigolf_prefs", MODE_PRIVATE)
+            val fullScreen = prefs.getBoolean("full_screen_enabled", true)
+            applySystemBarsVisibility(fullScreen)
+        }
+    }
+
+    private fun applySystemBarsVisibility(fullScreen: Boolean) {
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        if (fullScreen) {
+            windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+        }
     }
 }
 
@@ -232,10 +253,12 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
                                 hapticEnabled = viewModel.hapticEnabled,
                                 soundEnabled = viewModel.soundEnabled,
                                 keepScreenOn = viewModel.keepScreenOn,
+                                fullScreenEnabled = viewModel.fullScreenEnabled,
                                 shadowStyle = shadowStyle,
                                 onHapticToggle = { viewModel.toggleHaptic(it) },
                                 onSoundToggle = { viewModel.toggleSound(it) },
                                 onKeepScreenOnToggle = { viewModel.toggleKeepScreenOn(it) },
+                                onFullScreenToggle = { viewModel.toggleFullScreen(it) },
                                 onDismiss = { showSettingsDialog = false },
                                 onShowInfo = { showSettingsDialog = false; showInfoDialog = true }
                             )

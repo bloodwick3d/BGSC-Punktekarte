@@ -86,6 +86,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     var hapticEnabled by mutableStateOf(prefs.getBoolean("haptic_enabled", true))
     var keepScreenOn by mutableStateOf(prefs.getBoolean("keep_screen_on", false))
     var soundEnabled by mutableStateOf(prefs.getBoolean("sound_enabled", true))
+    var fullScreenEnabled by mutableStateOf(prefs.getBoolean("full_screen_enabled", true))
     var isTurnierMode by mutableStateOf(prefs.getBoolean("turnier_mode", false))
     var tournamentTheme by mutableStateOf(
         TournamentTheme.entries.getOrElse(prefs.getInt("tournament_theme", TournamentTheme.SYSTEM.ordinal)) { TournamentTheme.SYSTEM }
@@ -182,6 +183,11 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleKeepScreenOn(enabled: Boolean) {
         keepScreenOn = enabled
         prefs.edit { putBoolean("keep_screen_on", enabled) }
+    }
+
+    fun toggleFullScreen(enabled: Boolean) {
+        fullScreenEnabled = enabled
+        prefs.edit { putBoolean("full_screen_enabled", enabled) }
     }
 
     fun toggleTurnierMode(enabled: Boolean) {

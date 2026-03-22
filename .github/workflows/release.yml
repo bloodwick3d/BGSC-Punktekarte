@@ -6,7 +6,7 @@ on:
       - main
     tags:
       - 'v*'
-      - '[0-9]*' # Akzeptiert jetzt auch Tags, die mit einer Zahl beginnen (z.B. 1.0.0)
+      - '[0-9]*'
   workflow_dispatch:
 
 permissions:
@@ -39,7 +39,6 @@ jobs:
           name: debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
-      # Release-Schritte: Prüft nun einfach, ob es irgendein Tag ist
       - name: Decode Keystore
         if: contains(github.ref, 'refs/tags/')
         run: echo "${{ secrets.SIGNING_KEY }}" | base64 --decode > app/release.keystore
@@ -60,7 +59,8 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           draft: false
-          prerelease: false
+          # Markiert das Release als Pre-release, wenn der Tag 'beta' oder 'alpha' enthält
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
