@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -37,9 +36,6 @@ import com.google.gson.reflect.TypeToken
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * Screen that displays the history of saved tournament notes.
- */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TournamentHistoryScreen(
@@ -66,6 +62,7 @@ fun TournamentHistoryScreen(
         )
     )
 
+    // Automatisch Suche beenden
     val isImeVisible = WindowInsets.isImeVisible
     LaunchedEffect(isImeVisible) {
         if (!isImeVisible && searchQuery.isEmpty() && isSearchExpanded) {
@@ -75,6 +72,20 @@ fun TournamentHistoryScreen(
 
     LaunchedEffect(isSearchExpanded) {
         if (isSearchExpanded) focusRequester.requestFocus()
+    }
+
+    // Such-Vorschläge berechnen
+    val suggestions = remember(history, searchQuery) {
+        if (searchQuery.isBlank()) emptyList()
+        else {
+            history.asSequence()
+                .flatMap { listOf(it.location, it.system) }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .filter { it.contains(searchQuery, ignoreCase = true) && !it.equals(searchQuery, ignoreCase = true) }
+                .take(5)
+                .toList()
+        }
     }
 
     val filteredHistory = remember(history, searchQuery) {
@@ -94,10 +105,10 @@ fun TournamentHistoryScreen(
     currentItemToDelete?.let { result ->
         AlertDialog(
             onDismissRequest = { itemToDeleteState.value = null },
-            title = { Text(stringResource(R.string.tournament_history_delete_title), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
+            title = { Text("Notiz löschen?", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
             text = { 
-                val locationName = result.location.ifBlank { stringResource(R.string.tournament_history_unknown_location) }
-                Text(stringResource(R.string.tournament_history_delete_text, locationName), color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                val locationName = result.location.ifBlank { "diesen Ort" }
+                Text("Möchtest du die Notizen für \"$locationName\" wirklich unwiderruflich löschen?", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
             },
             confirmButton = {
                 Button(
@@ -109,7 +120,7 @@ fun TournamentHistoryScreen(
                     shape = buttonShape,
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                 ) {
-                    Text(stringResource(R.string.dialog_delete), color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
+                    Text("Löschen", color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
                 }
             },
             dismissButton = {
@@ -121,7 +132,7 @@ fun TournamentHistoryScreen(
                     shape = buttonShape,
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                 ) {
-                    Text(stringResource(R.string.dialog_cancel), color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                    Text("Abbrechen", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -137,6 +148,7 @@ fun TournamentHistoryScreen(
             .then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // Header Bereich
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.background,
@@ -157,14 +169,14 @@ fun TournamentHistoryScreen(
                                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.5f), modifier = Modifier.offset(1.5.dp, 1.5.dp))
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = stringResource(R.string.dialog_cancel),
+                                            contentDescription = "Zurück",
                                             tint = MaterialTheme.colorScheme.onBackground
                                         )
                                     }
                                 }
                                 Spacer(Modifier.width(8.adaptiveDp()))
                                 Text(
-                                    stringResource(R.string.tournament_history_title),
+                                    "Gespeicherte Notizen",
                                     fontSize = 20.adaptiveSp(),
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onBackground,
@@ -178,7 +190,7 @@ fun TournamentHistoryScreen(
                                     Icon(Icons.Default.Search, contentDescription = null, tint = Color.Black.copy(alpha = 0.5f), modifier = Modifier.offset(1.5.dp, 1.5.dp))
                                     Icon(
                                         imageVector = Icons.Default.Search,
-                                        contentDescription = stringResource(R.string.history_search_icon_desc),
+                                        contentDescription = "Suchen",
                                         tint = MaterialTheme.colorScheme.onBackground
                                     )
                                 }
@@ -192,7 +204,7 @@ fun TournamentHistoryScreen(
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.5f), modifier = Modifier.offset(1.5.dp, 1.5.dp))
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(R.string.history_search_close),
+                                        contentDescription = "Schließen",
                                         tint = MaterialTheme.colorScheme.onBackground
                                     )
                                 }
@@ -205,7 +217,7 @@ fun TournamentHistoryScreen(
                                     .focusRequester(focusRequester),
                                 placeholder = { 
                                     Text(
-                                        stringResource(R.string.history_search_placeholder), 
+                                        "Suchen...", 
                                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                                         style = shadowStyle.copy(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
                                     ) 
@@ -221,7 +233,7 @@ fun TournamentHistoryScreen(
                                             Icon(Icons.Default.Close, contentDescription = null, tint = Color.Black.copy(alpha = 0.5f), modifier = Modifier.offset(1.5.dp, 1.5.dp))
                                             Icon(
                                                 imageVector = Icons.Default.Close,
-                                                contentDescription = stringResource(R.string.history_search_clear),
+                                                contentDescription = "Löschen",
                                                 tint = MaterialTheme.colorScheme.onBackground
                                             )
                                         }
@@ -243,41 +255,28 @@ fun TournamentHistoryScreen(
                         }
                     }
 
+                    // Wortvorschläge (Chips)
                     AnimatedVisibility(
-                        visible = isSearchExpanded,
+                        visible = isSearchExpanded && suggestions.isNotEmpty(),
                         enter = expandVertically() + fadeIn(),
                         exit = shrinkVertically() + fadeOut()
                     ) {
-                        val suggestions = remember(history, searchQuery) {
-                            if (searchQuery.isBlank()) emptyList()
-                            else {
-                                history.asSequence()
-                                    .flatMap { listOf(it.location, it.system) }
-                                    .filter { it.isNotBlank() }
-                                    .distinct()
-                                    .filter { it.contains(searchQuery, ignoreCase = true) && !it.equals(searchQuery, ignoreCase = true) }
-                                    .take(5)
-                                    .toList()
-                            }
-                        }
-                        
-                        if (suggestions.isNotEmpty()) {
-                            LazyRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 12.adaptiveDp()),
-                                contentPadding = PaddingValues(horizontal = 16.adaptiveDp()),
-                                horizontalArrangement = Arrangement.spacedBy(8.adaptiveDp())
-                            ) {
-                                items(suggestions) { suggestion ->
-                                    SuggestionChip(text = suggestion, onClick = { searchQuery = suggestion })
-                                }
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.adaptiveDp()),
+                            contentPadding = PaddingValues(horizontal = 16.adaptiveDp()),
+                            horizontalArrangement = Arrangement.spacedBy(8.adaptiveDp())
+                        ) {
+                            items(suggestions) { suggestion ->
+                                SuggestionChip(text = suggestion, onClick = { searchQuery = suggestion })
                             }
                         }
                     }
                 }
             }
 
+            // Liste
             Box(modifier = Modifier.weight(1f).imePadding()) {
                 if (filteredHistory.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -298,8 +297,8 @@ fun TournamentHistoryScreen(
                             }
                             Spacer(Modifier.height(16.adaptiveDp()))
                             Text(
-                                text = if (searchQuery.isEmpty()) stringResource(R.string.tournament_history_empty) 
-                                       else stringResource(R.string.history_no_results), 
+                                text = if (searchQuery.isEmpty()) "Noch keine Notizen gespeichert" 
+                                       else "Keine passenden Notizen gefunden", 
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                                 style = shadowStyle.copy(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
                             )
@@ -326,6 +325,7 @@ fun TournamentHistoryScreen(
         }
     }
     
+    // Details Dialog
     selectedResultForDetails?.let { result ->
         TournamentDetailsDialog(
             result = result,
@@ -335,9 +335,6 @@ fun TournamentHistoryScreen(
     }
 }
 
-/**
- * A dialog displaying the full details of a saved tournament note result.
- */
 @Composable
 fun TournamentDetailsDialog(
     result: TournamentNoteResult,
@@ -360,6 +357,7 @@ fun TournamentDetailsDialog(
             color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                // Header (Feststehend)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -373,7 +371,7 @@ fun TournamentDetailsDialog(
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.5f), modifier = Modifier.offset(1.5.dp, 1.5.dp))
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.dialog_cancel),
+                                contentDescription = "Zurück",
                                 tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
@@ -392,7 +390,7 @@ fun TournamentDetailsDialog(
                             }
                             Spacer(Modifier.width(4.adaptiveDp()))
                             Text(
-                                text = result.location.ifBlank { stringResource(R.string.tournament_history_unknown_location) },
+                                text = result.location.ifBlank { "Unbekannter Ort" },
                                 fontSize = 18.adaptiveSp(),
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -430,12 +428,14 @@ fun TournamentDetailsDialog(
                     }
                 }
 
+                // Tabelle
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
                         .padding(16.adaptiveDp())
                 ) {
+                    // Table Header
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -443,10 +443,10 @@ fun TournamentDetailsDialog(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(stringResource(R.string.column_header_number), modifier = Modifier.width(30.dp), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
-                        Text(stringResource(R.string.tournament_balls), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
-                        Text(stringResource(R.string.tournament_tee_off), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
-                        Text(stringResource(R.string.tournament_notes), modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                        Text("#", modifier = Modifier.width(30.dp), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                        Text("Bälle", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                        Text("Abschlag", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                        Text("Notizen", modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
                     }
 
                     notes.forEachIndexed { index, note ->
@@ -479,9 +479,6 @@ fun TournamentDetailsDialog(
     }
 }
 
-/**
- * A simple non-editable text box for tournament details.
- */
 @Composable
 fun ReadOnlyTournamentBox(
     text: String, 
@@ -506,9 +503,6 @@ fun ReadOnlyTournamentBox(
     }
 }
 
-/**
- * A small chip used for showing search suggestions.
- */
 @Composable
 fun SuggestionChip(text: String, onClick: () -> Unit) {
     Surface(
@@ -528,9 +522,6 @@ fun SuggestionChip(text: String, onClick: () -> Unit) {
     }
 }
 
-/**
- * A wrapper for [TournamentHistoryItem] that adds swipe-to-dismiss behavior.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeableTournamentItem(
@@ -611,9 +602,6 @@ fun SwipeableTournamentItem(
     }
 }
 
-/**
- * An individual item in the tournament history list.
- */
 @Composable
 fun TournamentHistoryItem(
     result: TournamentNoteResult, 
@@ -650,7 +638,7 @@ fun TournamentHistoryItem(
                 }
                 Spacer(Modifier.width(4.adaptiveDp()))
                 Text(
-                    text = result.location.ifBlank { stringResource(R.string.tournament_history_unknown_location) },
+                    text = result.location.ifBlank { "Unbekannter Ort" },
                     fontWeight = FontWeight.Bold, 
                     fontSize = 16.adaptiveSp(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -51,7 +50,7 @@ fun EditPlayerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.dialog_edit_player_title), color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
+        title = { Text("Spieler bearbeiten", color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
         containerColor = Color.White.copy(alpha = 0.4f),
         tonalElevation = 0.dp,
         text = {
@@ -70,7 +69,7 @@ fun EditPlayerDialog(
                 TextField(
                     value = editName,
                     onValueChange = { editName = it },
-                    placeholder = { Text(stringResource(R.string.dialog_player_name_label), fontFamily = CalibriFontFamily) },
+                    placeholder = { Text("Name", fontFamily = CalibriFontFamily) },
                     singleLine = true,
                     colors = tfColors,
                     textStyle = shadowStyle.copy(color = Color.White, fontWeight = FontWeight.Bold),
@@ -100,7 +99,7 @@ fun EditPlayerDialog(
                             Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
                         }
                         Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.dialog_save), style = shadowStyle, fontSize = 14.sp)
+                        Text("Speichern", style = shadowStyle, fontSize = 14.sp)
                     }
                 }
                 if (canRemove) {
@@ -118,7 +117,7 @@ fun EditPlayerDialog(
                                 Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                             }
                             Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.dialog_remove_player), style = shadowStyle, fontSize = 14.sp)
+                            Text("Entfernen", style = shadowStyle, fontSize = 14.sp)
                         }
                     }
                 }
@@ -139,11 +138,10 @@ fun AddPlayerDialog(
     var addHue by remember { mutableFloatStateOf(kotlin.random.Random.nextFloat() * 360f) }
     val addColor = Color.hsv(addHue, 0.8f, 0.6f)
     val buttonShape = RoundedCornerShape(20.dp)
-    val defaultPlayerName = stringResource(R.string.default_player_name, playerCount + 1)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.dialog_add_player_title), color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
+        title = { Text("Spieler hinzufügen", color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
         containerColor = Color.White.copy(alpha = 0.4f),
         tonalElevation = 0.dp,
         text = {
@@ -162,7 +160,7 @@ fun AddPlayerDialog(
                 TextField(
                     value = addName,
                     onValueChange = { addName = it },
-                    placeholder = { Text(stringResource(R.string.dialog_player_name_label), fontFamily = CalibriFontFamily) },
+                    placeholder = { Text("Name", fontFamily = CalibriFontFamily) },
                     singleLine = true,
                     colors = tfColors,
                     textStyle = shadowStyle.copy(color = Color.White, fontWeight = FontWeight.Bold),
@@ -176,7 +174,8 @@ fun AddPlayerDialog(
         confirmButton = {
             Button(
                 onClick = golfClick {
-                    onAdd(addName.ifBlank { defaultPlayerName }, addColor)
+                    val name = addName.ifBlank { "Spieler ${playerCount + 1}" }
+                    onAdd(name, addColor)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                 shape = buttonShape,
@@ -189,7 +188,7 @@ fun AddPlayerDialog(
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     }
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.dialog_add), style = shadowStyle)
+                    Text("Hinzufügen", style = shadowStyle)
                 }
             }
         }
