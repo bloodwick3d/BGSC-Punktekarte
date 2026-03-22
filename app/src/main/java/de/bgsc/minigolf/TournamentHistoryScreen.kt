@@ -45,7 +45,8 @@ import java.util.*
 fun TournamentHistoryScreen(
     viewModel: GolfViewModel,
     onBack: () -> Unit,
-    onEdit: (TournamentNoteResult) -> Unit
+    onEdit: (TournamentNoteResult) -> Unit,
+    fullScreenEnabled: Boolean
 ) {
     val history by viewModel.tournamentHistory.collectAsStateWithLifecycle()
     
@@ -133,7 +134,7 @@ fun TournamentHistoryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
+            .then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Surface(

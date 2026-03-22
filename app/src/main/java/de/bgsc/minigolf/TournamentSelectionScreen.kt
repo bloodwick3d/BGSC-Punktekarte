@@ -48,7 +48,10 @@ fun Modifier.tournamentTextStyleShadow(
         val paint = Paint()
         val frameworkPaint = paint.asFrameworkPaint()
         if (blurRadius > 0f) {
-            frameworkPaint.maskFilter = android.graphics.BlurMaskFilter(blurRadius, android.graphics.BlurMaskFilter.Blur.NORMAL)
+            frameworkPaint.maskFilter = android.graphics.BlurMaskFilter(
+                blurRadius, 
+                android.graphics.BlurMaskFilter.Blur.NORMAL
+            )
         }
         frameworkPaint.color = color.toArgb()
 
@@ -75,7 +78,10 @@ fun Modifier.roundTextStyleShadow(
         val paint = Paint()
         val frameworkPaint = paint.asFrameworkPaint()
         if (blurRadius > 0f) {
-            frameworkPaint.maskFilter = android.graphics.BlurMaskFilter(blurRadius, android.graphics.BlurMaskFilter.Blur.NORMAL)
+            frameworkPaint.maskFilter = android.graphics.BlurMaskFilter(
+                blurRadius, 
+                android.graphics.BlurMaskFilter.Blur.NORMAL
+            )
         }
         frameworkPaint.color = color.toArgb()
 
@@ -92,7 +98,8 @@ fun TournamentSelectionScreen(
     viewModel: GolfViewModel,
     onBack: () -> Unit,
     onNewNote: () -> Unit,
-    onShowHistory: () -> Unit
+    onShowHistory: () -> Unit,
+    fullScreenEnabled: Boolean
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -188,7 +195,7 @@ fun TournamentSelectionScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
+            .then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(

@@ -10,10 +10,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,12 +34,12 @@ fun AppSettingsDialog(
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     keepScreenOn: Boolean,
-    currentLanguage: String,
+    fullScreenEnabled: Boolean,
     shadowStyle: TextStyle,
     onHapticToggle: (Boolean) -> Unit,
     onSoundToggle: (Boolean) -> Unit,
     onKeepScreenOnToggle: (Boolean) -> Unit,
-    onLanguageChange: (String) -> Unit,
+    onFullScreenToggle: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     onShowInfo: () -> Unit
 ) {
@@ -71,7 +71,7 @@ fun AppSettingsDialog(
                         )
                         Icon(
                             Icons.Default.Info, 
-                            contentDescription = stringResource(R.string.menu_info),
+                            contentDescription = "Info", 
                             tint = Color.Black.copy(alpha = 0.5f)
                         )
                     }
@@ -103,44 +103,13 @@ fun AppSettingsDialog(
                     onCheckedChange = { onKeepScreenOnToggle(it) },
                     shadowStyle = shadowStyle
                 )
-                
-                // Language Selector
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.05f))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Language, null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.size(24.dp).offset(1.dp, 1.dp))
-                            Icon(Icons.Default.Language, null, tint = Color.Black, modifier = Modifier.size(24.dp))
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Text(stringResource(R.string.settings_language), style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Medium), fontSize = 16.sp)
-                    }
-                    
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "DE", 
-                            modifier = Modifier.golfClickable { onLanguageChange("de") },
-                            color = if (currentLanguage == "de") Color(0xFFFFD54F) else Color.Black.copy(alpha = 0.5f),
-                            fontWeight = if (currentLanguage == "de") FontWeight.Bold else FontWeight.Normal,
-                            style = shadowStyle.copy(color = if (currentLanguage == "de") Color(0xFFFFD54F) else Color.Black.copy(alpha = 0.5f))
-                        )
-                        Text(" / ", style = shadowStyle.copy(color = Color.Black.copy(alpha = 0.3f)))
-                        Text(
-                            "EN", 
-                            modifier = Modifier.golfClickable { onLanguageChange("en") },
-                            color = if (currentLanguage == "en") Color(0xFFFFD54F) else Color.Black.copy(alpha = 0.5f),
-                            fontWeight = if (currentLanguage == "en") FontWeight.Bold else FontWeight.Normal,
-                            style = shadowStyle.copy(color = if (currentLanguage == "en") Color(0xFFFFD54F) else Color.Black.copy(alpha = 0.5f))
-                        )
-                    }
-                }
+                SettingsSwitchRow(
+                    icon = Icons.Default.Fullscreen,
+                    text = stringResource(R.string.settings_full_screen),
+                    checked = fullScreenEnabled,
+                    onCheckedChange = { onFullScreenToggle(it) },
+                    shadowStyle = shadowStyle
+                )
             }
         },
         confirmButton = {
@@ -157,7 +126,7 @@ fun AppSettingsDialog(
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                     }
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.settings_btn_done), style = shadowStyle)
+                    Text(stringResource(R.string.dialog_finish), style = shadowStyle)
                 }
             }
         }
@@ -170,7 +139,7 @@ fun AppInfoDialog(appVersion: String, shadowStyle: TextStyle, onDismiss: () -> U
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.info_title), color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
+        title = { Text(stringResource(R.string.settings_info_title), color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
         containerColor = Color.White.copy(alpha = 0.4f),
         tonalElevation = 0.dp,
         text = {
@@ -181,28 +150,52 @@ fun AppInfoDialog(appVersion: String, shadowStyle: TextStyle, onDismiss: () -> U
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 ExpandableInfoSection(
-                    title = stringResource(R.string.info_imprint_title),
-                    content = stringResource(R.string.info_imprint_content),
+                    title = "Impressum", 
+                    content = "Angaben gemäß § 5 DDG\n\n" +
+                            "BGSC \"Gut Schlag\" Gladbeck e.V.\n" +
+                            "Bohmertstraße 283\n" +
+                            "45964 Gladbeck\n\n" +
+                            "Vertreten durch den Vorstand:\n" +
+                            "1. Vorsitzender: \n" +
+                            "2. Vorsitzender: \n\n" +
+                            "Kontakt:\n" +
+                            "Ansprechpartner: Patrick Kempken\n" +
+                            "E-Mail: bloodwick3d@gmail.com\n" +
+                            "Telefon: \n\n" +
+                            "Registereintrag:\n" +
+                            "Eintragung im Vereinsregister.\n" +
+                            "Registergericht: \n" +
+                            "Registernummer: \n\n" +
+                            "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:\n" +
+                            "Patrick Kempken", 
                     shadowStyle = shadowStyle
                 )
                 HorizontalDivider(color = Color.Black.copy(alpha = 0.1f))
                 
                 ExpandableInfoSection(
-                    title = stringResource(R.string.info_privacy_title),
-                    content = stringResource(R.string.info_privacy_content),
+                    title = "Datenschutz", 
+                    content = "Diese App arbeitet lokal. Alle Spielstände und Notizen werden ausschließlich auf deinem Gerät gespeichert. Es werden keine persönlichen Daten erfasst, analysiert oder an Dritte weitergegeben. Lediglich beim Prüfen auf Updates wird eine Verbindung zu GitHub hergestellt, um die neueste Version zu finden.",
                     shadowStyle = shadowStyle
                 )
                 HorizontalDivider(color = Color.Black.copy(alpha = 0.1f))
                 
                 ExpandableInfoSection(
-                    title = stringResource(R.string.info_licenses_title),
-                    content = stringResource(R.string.info_licenses_content),
+                    title = "Lizenzen & Open Source", 
+                    content = "Diese App nutzt die folgenden Open-Source-Bibliotheken:\n\n" +
+                            "• Android Jetpack & Compose (Apache 2.0)\n" +
+                            "• Material Design Components 3 (Apache 2.0)\n" +
+                            "• Room Persistence Library (Apache 2.0)\n" +
+                            "• Kotlin Standard Library (Apache 2.0)\n" +
+                            "• Google Gson (Apache 2.0)\n" +
+                            "• Square OkHttp (Apache 2.0)\n" +
+                            "• AndroidX Core KTX & Lifecycle (Apache 2.0)\n\n" +
+                            "Ein besonderer Dank geht an die Open-Source-Community für die Bereitstellung dieser großartigen Werkzeuge.", 
                     shadowStyle = shadowStyle
                 )
                 
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    stringResource(R.string.info_version, appVersion),
+                    "App-Version: $appVersion",
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     style = shadowStyle.copy(color = Color.Gray, fontSize = 12.sp)
@@ -217,7 +210,7 @@ fun AppInfoDialog(appVersion: String, shadowStyle: TextStyle, onDismiss: () -> U
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.info_btn_close), style = shadowStyle)
+                Text(stringResource(R.string.dialog_close), style = shadowStyle)
             }
         }
     )
@@ -243,7 +236,7 @@ private fun ExpandableInfoSection(title: String, content: String, shadowStyle: T
             )
             Icon(
                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = if (expanded) stringResource(R.string.info_collapse) else stringResource(R.string.info_expand),
+                contentDescription = if (expanded) "Einklappen" else "Ausklappen",
                 tint = Color.Black.copy(alpha = 0.5f)
             )
         }

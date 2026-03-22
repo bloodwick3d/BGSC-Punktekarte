@@ -60,7 +60,6 @@ import kotlin.math.roundToInt
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -68,34 +67,36 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         }
-        
         window.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
-        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
-        
         enableEdgeToEdge()
-        
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.let { controller ->
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-        }
-        
         setContent { 
             val viewModel: GolfViewModel = viewModel()
-            val context = LocalContext.current
-            
-            CompositionLocalProvider(
-                LocalContext provides LanguageHelper.setLocale(context, viewModel.currentLanguage)
-            ) {
-                MiniGolfTheme { 
-                    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
-                        MiniGolfApp(viewModel) 
-                    } 
-                }
+            LaunchedEffect(viewModel.fullScreenEnabled) {
+                applySystemBarsVisibility(viewModel.fullScreenEnabled)
             }
+            MiniGolfTheme { Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { MiniGolfApp(viewModel) } } 
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            val prefs = getSharedPreferences("minigolf_prefs", MODE_PRIVATE)
+            val fullScreen = prefs.getBoolean("full_screen_enabled", true)
+            applySystemBarsVisibility(fullScreen)
+        }
+    }
+
+    private fun applySystemBarsVisibility(fullScreen: Boolean) {
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        if (fullScreen) {
+            windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
         }
     }
 }
@@ -103,7 +104,7 @@ class MainActivity : ComponentActivity() {
 data class FlyingScoreInfo(val score: Int?, val start: Offset, val end: Offset, val playerIndex: Int, val roundIndex: Int, val holeIndex: Int)
 
 @Composable
-fun MiniGolfApp(viewModel: GolfViewModel) {
+fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
@@ -133,7 +134,6 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
     val allFilled = remember(players) { players.isNotEmpty() && players.all { p -> p.roundScores.all { rs -> rs.all { it != null } } } }
 
     LaunchedEffect(allFilled) { if (allFilled) { delay(800); showWinnerDialog = true } }
-    
     LaunchedEffect(viewModel.keepScreenOn) {
         (context as? Activity)?.window?.let { window ->
             if (viewModel.keepScreenOn) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -162,7 +162,13 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     Box(modifier = Modifier.fillMaxSize().then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && currentBlurRadius > 0.dp) Modifier.blur(currentBlurRadius) else Modifier).clipToBounds()) {
                         Image(painter = painterResource(id = R.drawable.bg_minigolf), contentDescription = null, modifier = Modifier.fillMaxSize().blur(15.dp), contentScale = ContentScale.Crop)
-                        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier), 
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             TopAppBar(
                                 selectedSystem = viewModel.selectedSystem, onSystemSelected = { viewModel.selectedSystem = it },
                                 currentLocation = viewModel.currentLocation, onLocationChanged = { viewModel.currentLocation = it },
@@ -188,6 +194,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                             })
                         }
                         
+                        // Update Dialog
                         viewModel.updateAvailable?.let { info ->
                             AlertDialog(
                                 onDismissRequest = { if (!viewModel.isDownloadingUpdate) viewModel.updateAvailable = null },
@@ -203,7 +210,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                         if (viewModel.isDownloadingUpdate) {
                                             Spacer(modifier = Modifier.height(16.dp))
                                             LinearProgressIndicator(progress = { viewModel.downloadProgress }, modifier = Modifier.fillMaxWidth())
-                                            Text(stringResource(R.string.percentage_format, (viewModel.downloadProgress * 100).toInt()), modifier = Modifier.align(Alignment.End), style = shadowStyle.copy(fontSize = 11.sp))
+                                            Text("${(viewModel.downloadProgress * 100).toInt()}%", modifier = Modifier.align(Alignment.End), style = shadowStyle.copy(fontSize = 11.sp))
                                         }
                                     }
                                 },
@@ -251,12 +258,12 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                 hapticEnabled = viewModel.hapticEnabled,
                                 soundEnabled = viewModel.soundEnabled,
                                 keepScreenOn = viewModel.keepScreenOn,
-                                currentLanguage = viewModel.currentLanguage,
+                                fullScreenEnabled = viewModel.fullScreenEnabled,
                                 shadowStyle = shadowStyle,
                                 onHapticToggle = { viewModel.toggleHaptic(it) },
-                                onSoundToggle = { viewModel.toggleSound(it) },
+                                onSoundToggle = { viewModel.soundEnabled = it; viewModel.toggleSound(it) },
                                 onKeepScreenOnToggle = { viewModel.toggleKeepScreenOn(it) },
-                                onLanguageChange = { viewModel.setLanguage(it) },
+                                onFullScreenToggle = { viewModel.toggleFullScreen(it) },
                                 onDismiss = { showSettingsDialog = false },
                                 onShowInfo = { showSettingsDialog = false; showInfoDialog = true }
                             )
@@ -274,6 +281,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                             playerCount = players.size, 
                             numRounds = numRounds, 
                             hapticEnabled = viewModel.hapticEnabled, 
+                            fullScreenEnabled = viewModel.fullScreenEnabled,
                             isTurnierMode = viewModel.isTurnierMode,
                             onAddPlayerClick = { showAddPlayerDialog = true; showSideMenu = false }, 
                             onShowResultsClick = { showWinnerDialog = true; showSideMenu = false }, 
@@ -290,18 +298,18 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                 }
 
                 AnimatedVisibility(visible = viewModel.currentScreen == Screen.History, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                    HistoryScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() })
+                    HistoryScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, fullScreenEnabled = viewModel.fullScreenEnabled)
                 }
 
                 TournamentThemeWrapper(theme = viewModel.tournamentTheme) {
                     AnimatedVisibility(visible = viewModel.currentScreen == Screen.TournamentSelection, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                        TournamentSelectionScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onNewNote = { viewModel.resetTournamentNotes(); viewModel.currentScreen = Screen.TournamentTable }, onShowHistory = { viewModel.currentScreen = Screen.TournamentHistory })
+                        TournamentSelectionScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onNewNote = { viewModel.resetTournamentNotes(); viewModel.currentScreen = Screen.TournamentTable }, onShowHistory = { viewModel.currentScreen = Screen.TournamentHistory }, fullScreenEnabled = viewModel.fullScreenEnabled)
                     }
                     AnimatedVisibility(visible = viewModel.currentScreen == Screen.TournamentTable, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                        TournamentScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onSaveFinished = { viewModel.onBackPressed() })
+                        TournamentScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onSaveFinished = { viewModel.onBackPressed() }, fullScreenEnabled = viewModel.fullScreenEnabled)
                     }
                     AnimatedVisibility(visible = viewModel.currentScreen == Screen.TournamentHistory, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                        TournamentHistoryScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onEdit = { result -> viewModel.loadTournamentNote(result) })
+                        TournamentHistoryScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onEdit = { result -> viewModel.loadTournamentNote(result) }, fullScreenEnabled = viewModel.fullScreenEnabled)
                     }
                 }
             }
