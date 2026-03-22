@@ -14,9 +14,6 @@ import com.google.gson.reflect.TypeToken
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * Generiert ein hochauflösendes Ergebnisbild direkt auf einem Canvas mit semi-transparenter Tabelle im ScoreTable-Look.
- */
 fun generateResultBitmap(context: Context, result: GameResult): Bitmap {
     val players: List<PlayerScore> = Gson().fromJson(result.playersJson, object : TypeToken<List<PlayerScore>>() {}.type)
     return generateBitmapFromData(context, players, result.system, result.location, result.date)
@@ -32,11 +29,9 @@ fun generateBitmapFromData(
     val numRounds = players.firstOrNull()?.rounds?.size ?: 1
     val scale = 2f 
     
-    // Laden der Calibri Typefaces für den Canvas
     val calibriNormal = ResourcesCompat.getFont(context, R.font.calibri) ?: Typeface.DEFAULT
     val calibriBold = ResourcesCompat.getFont(context, R.font.calibri_bold) ?: Typeface.DEFAULT_BOLD
 
-    // --- SYNCHRONISATION MIT SCORE-TABLE UI ---
     val stickyColumnWidth = 35f * scale
     val playerColumnWidth = 100f * scale
     val playerGap = 2f * scale
@@ -51,16 +46,13 @@ fun generateBitmapFromData(
     val logoColumnWidth = 70f * scale
     val headerTextHeight = 60f * scale 
     
-    // Gesamte Tabellenbreite berechnen
     val tableWidth = stickyColumnWidth + playerGap + (players.size * (playerColumnWidth + playerGap)) + stickyColumnWidth
     
-    // Gesamte Tabellenhöhe berechnen
     val tableTotalHeight = tableHeaderHeight + sectionGap + (18 * rowHeight) + sectionGap + footerHeight
     
     val tableLeft = logoColumnWidth + sidePadding
     val tableRight = tableLeft + tableWidth
     
-    // Gesamtmaße des Bildes
     val totalWidth = tableRight + sidePadding
     val totalHeight = headerTextHeight + tableTotalHeight + bottomPadding
     
@@ -70,15 +62,12 @@ fun generateBitmapFromData(
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     
     bitmap.applyCanvas {
-        // --- 0. HINTERGRUND (Center Crop + Blur) ---
         try {
             val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
             var bgBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.bg_minigolf, options)
             if (bgBitmap != null) {
-                // 1. Blur anwenden
                 bgBitmap = blurBitmap(bgBitmap, context)
                 
-                // 2. Center Crop Logik berechnen
                 val bWidth = bgBitmap.width.toFloat()
                 val bHeight = bgBitmap.height.toFloat()
                 val scaleFactor = (totalWidth / bWidth).coerceAtLeast(totalHeight / bHeight)
@@ -93,7 +82,6 @@ fun generateBitmapFromData(
                 
                 drawBitmap(bgBitmap, srcRect, destRect, paint)
                 
-                // Dezenterer dunkler Schleier (Alpha 70)
                 paint.color = Color.argb(70, 0, 0, 0) 
                 drawRect(0f, 0f, totalWidth, totalHeight, paint)
             } else {
@@ -107,13 +95,13 @@ fun generateBitmapFromData(
             color = Color.BLACK
             textSize = 14f * scale
             typeface = calibriNormal
-            // --- SCHLAGSCHATTEN HINZUFÜGEN ---
             setShadowLayer(2f * scale, 1f * scale, 1f * scale, Color.argb(180, 0, 0, 0))
         }
 
-        // --- 1. HEADER-TEXTE (Datum, System, Ort) ---
-        val dateStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(date))
-        val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(date))
+        val dateFormat = SimpleDateFormat(context.getString(R.string.bitmap_date_format), Locale.getDefault())
+        val dateTimeStr = dateFormat.format(Date(date)).split(" - ")
+        val dateStr = dateTimeStr.getOrNull(0) ?: ""
+        val timeStr = dateTimeStr.getOrNull(1) ?: ""
         
         textPaint.color = Color.LTGRAY
         textPaint.textSize = 8f * scale
@@ -122,7 +110,6 @@ fun generateBitmapFromData(
         val iconSize = 10f * scale
         val iconPadding = 4f * scale
         
-        // Kalender Icon + Datum
         try {
             ResourcesCompat.getDrawable(context.resources, R.drawable.ic_calendar, null)?.let { drawable ->
                 val iconBitmap = drawable.toBitmap(iconSize.toInt(), iconSize.toInt())
@@ -131,7 +118,6 @@ fun generateBitmapFromData(
         } catch (_: Exception) {}
         drawText(dateStr, sidePadding + 5f * scale + iconSize + iconPadding, 20f * scale, textPaint)
         
-        // Uhr Icon + Uhrzeit
         try {
             ResourcesCompat.getDrawable(context.resources, R.drawable.ic_clock, null)?.let { drawable ->
                 val iconBitmap = drawable.toBitmap(iconSize.toInt(), iconSize.toInt())
@@ -161,7 +147,6 @@ fun generateBitmapFromData(
             drawText(location, tableRight - locTextWidth, 40f * scale, textPaint)
         }
 
-        // --- 2. LOGO & VEREINSNAME ---
         val logoCenterX = sidePadding + logoColumnWidth / 2f
         val tableCenterY = headerTextHeight + tableHeaderHeight + (11 * rowHeight)
         
@@ -170,7 +155,7 @@ fun generateBitmapFromData(
         textPaint.typeface = calibriBold
         textPaint.isFakeBoldText = true 
         
-        val clubName = "BGSC \"Gut Schlag\" Gladbeck e.V."
+        val clubName = context.getString(R.string.drawer_club_name).replace("\n", " ")
         val textWidth = textPaint.measureText(clubName)
         withRotation(-90f, logoCenterX, tableCenterY) {
             drawText(clubName, logoCenterX - textWidth / 2f, tableCenterY + (textPaint.textSize / 3f), textPaint)
@@ -190,7 +175,6 @@ fun generateBitmapFromData(
             }
         } catch (_: Exception) {}
 
-        // --- 3. LOCH-SPALTE LINKS (Sticky) ---
         var currentX = tableLeft
         val cornerRadius = 15f * scale
         
@@ -224,12 +208,10 @@ fun generateBitmapFromData(
         
         currentX += (stickyColumnWidth + playerGap)
 
-        // --- 4. SPIELER SPALTEN ---
         players.forEach { player ->
             val pColor = player.colorInt
             currentY = headerTextHeight
             
-            // Spieler Header
             paint.color = pColor
             drawRect(currentX, currentY, currentX + playerColumnWidth, currentY + tableHeaderHeight, paint)
             textPaint.color = Color.WHITE
@@ -241,7 +223,6 @@ fun generateBitmapFromData(
             currentY += tableHeaderHeight + sectionGap
             val roundWidth = playerColumnWidth / numRounds
             
-            // Spieler Body (Löcher)
             for (hIdx in 0 until 18) {
                 val isEven = (hIdx + 1) % 2 == 0
                 paint.color = if (isEven) Color.WHITE else "#F5F5F5".toColorInt()
@@ -271,7 +252,6 @@ fun generateBitmapFromData(
                 currentY += rowHeight
             }
             
-            // Spieler Footer (Summen)
             currentY += sectionGap
             paint.color = "#E0E0E0".toColorInt()
             paint.alpha = 200
@@ -305,7 +285,6 @@ fun generateBitmapFromData(
             currentX += (playerColumnWidth + playerGap)
         }
 
-        // --- 5. LOCH-SPALTE RECHTS (Sticky) ---
         val currentXRight = currentX
         paint.color = Color.argb(102, 0, 0, 0)
         val headerPathR = Path().apply {
@@ -338,9 +317,6 @@ fun generateBitmapFromData(
     return bitmap
 }
 
-/**
- * Hilfsfunktion zum Weichzeichnen eines Bitmaps.
- */
 @Suppress("DEPRECATION")
 private fun blurBitmap(bitmap: Bitmap, context: Context, radius: Float = 25f): Bitmap {
     val downscale = 4

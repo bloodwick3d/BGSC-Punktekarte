@@ -33,11 +33,11 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-// Hilfs-Modifier für den "Text-Style" Schlagschatten
 fun Modifier.tournamentTextStyleShadow(
     color: Color = Color.Black.copy(alpha = 0.5f),
     offset: Offset = Offset(2f, 2f),
@@ -66,7 +66,6 @@ fun Modifier.tournamentTextStyleShadow(
     }
 }
 
-// Hilfs-Modifier für runden "Text-Style" Schlagschatten
 fun Modifier.roundTextStyleShadow(
     color: Color = Color.Black.copy(alpha = 0.5f),
     offset: Offset = Offset(2f, 2f),
@@ -99,6 +98,10 @@ fun TournamentSelectionScreen(
     val scrollState = rememberScrollState()
     val showExitConfirmationState = remember { mutableStateOf(false) }
 
+    val exportSuccessMsg = stringResource(R.string.tournament_export_success)
+    val exportErrorMsg = stringResource(R.string.error_export_failed)
+    val importInvalidMsg = stringResource(R.string.error_import_invalid)
+
     val shadowStyle = TextStyle(
         fontFamily = CalibriFontFamily,
         shadow = Shadow(
@@ -108,26 +111,37 @@ fun TournamentSelectionScreen(
         )
     )
 
-    // Launcher für Export (.bgsc Format)
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri ->
         uri?.let {
             viewModel.exportTournamentNotes(context, it) { success ->
-                if (success) Toast.makeText(context, "Export erfolgreich!", Toast.LENGTH_SHORT).show()
-                else Toast.makeText(context, "Export fehlgeschlagen.", Toast.LENGTH_SHORT).show()
+                if (success) Toast.makeText(context, exportSuccessMsg, Toast.LENGTH_SHORT).show()
+                else Toast.makeText(context, exportErrorMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // Launcher für Import (.bgsc Format)
+    var importCount by remember { mutableStateOf<Int?>(null) }
+    val importSuccessMsg = if (importCount != null) stringResource(R.string.tournament_import_success, importCount!!) else ""
+
+    LaunchedEffect(importCount) {
+        if (importCount != null) {
+            Toast.makeText(context, importSuccessMsg, Toast.LENGTH_SHORT).show()
+            importCount = null
+        }
+    }
+
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
             viewModel.importTournamentNotes(context, it) { success, count ->
-                if (success) Toast.makeText(context, "$count Notizen importiert!", Toast.LENGTH_SHORT).show()
-                else Toast.makeText(context, "Import fehlgeschlagen (Datei ungültig?).", Toast.LENGTH_SHORT).show()
+                if (success) {
+                    importCount = count
+                } else {
+                    Toast.makeText(context, importInvalidMsg, Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -136,8 +150,8 @@ fun TournamentSelectionScreen(
         val buttonShape = RoundedCornerShape(20.dp)
         AlertDialog(
             onDismissRequest = { showExitConfirmationState.value = false },
-            title = { Text("Turnier-Modus deaktivieren?", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)) },
-            text = { Text("Möchtest du den Turnier-Modus wirklich deaktivieren? Du kannst ihn jederzeit über das Menü wieder aktivieren.", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
+            title = { Text(stringResource(R.string.tournament_deactivate_confirm_title), color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)) },
+            text = { Text(stringResource(R.string.tournament_deactivate_confirm_text), color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
             confirmButton = {
                 Button(
                     onClick = golfClick {
@@ -149,7 +163,7 @@ fun TournamentSelectionScreen(
                     shape = buttonShape,
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                 ) {
-                    Text("Deaktivieren", color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
+                    Text(stringResource(R.string.tournament_btn_deactivate), color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
                 }
             },
             dismissButton = {
@@ -161,7 +175,7 @@ fun TournamentSelectionScreen(
                     shape = buttonShape,
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                 ) {
-                    Text("Abbrechen", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                    Text(stringResource(R.string.dialog_cancel), color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -177,7 +191,6 @@ fun TournamentSelectionScreen(
             .statusBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -191,14 +204,14 @@ fun TournamentSelectionScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "Zurück",
+                            contentDescription = stringResource(R.string.tournament_back),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }
                 Spacer(Modifier.width(8.adaptiveDp()))
                 Text(
-                    "Turnier-Modus",
+                    stringResource(R.string.menu_tournament_mode),
                     fontSize = 20.adaptiveSp(),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -206,7 +219,6 @@ fun TournamentSelectionScreen(
                 )
             }
 
-            // Haupt-Karten Bereich
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -218,8 +230,8 @@ fun TournamentSelectionScreen(
                 Spacer(Modifier.height(20.adaptiveDp()))
                 
                 SelectionCard(
-                    title = "Notiz erstellen",
-                    subtitle = "Erstelle eine neue Strategie",
+                    title = stringResource(R.string.tournament_btn_new),
+                    subtitle = stringResource(R.string.tournament_btn_new_subtitle),
                     icon = Icons.Default.Add,
                     color = Color(0xFF4CAF50),
                     onClick = { onNewNote() },
@@ -227,8 +239,8 @@ fun TournamentSelectionScreen(
                 )
 
                 SelectionCard(
-                    title = "Gespeicherte Notizen",
-                    subtitle = "Deine Strategien ansehen",
+                    title = stringResource(R.string.tournament_btn_history),
+                    subtitle = stringResource(R.string.tournament_btn_history_subtitle),
                     icon = Icons.Default.Description,
                     color = Color(0xFF2196F3),
                     onClick = { onShowHistory() },
@@ -236,7 +248,6 @@ fun TournamentSelectionScreen(
                 )
             }
 
-            // Unterer Icon-Bereich
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -245,9 +256,9 @@ fun TournamentSelectionScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val (themeIcon, themeName) = when (viewModel.tournamentTheme) {
-                    TournamentTheme.LIGHT -> Icons.Default.LightMode to "Hell"
-                    TournamentTheme.DARK -> Icons.Default.DarkMode to "Dunkel"
-                    TournamentTheme.SYSTEM -> Icons.Default.BrightnessAuto to "System"
+                    TournamentTheme.LIGHT -> Icons.Default.LightMode to stringResource(R.string.tournament_theme_light)
+                    TournamentTheme.DARK -> Icons.Default.DarkMode to stringResource(R.string.tournament_theme_dark)
+                    TournamentTheme.SYSTEM -> Icons.Default.BrightnessAuto to stringResource(R.string.tournament_theme_system)
                 }
 
                 SmallOptionButton(
@@ -267,7 +278,7 @@ fun TournamentSelectionScreen(
 
                 SmallOptionButton(
                     icon = Icons.Default.FileUpload,
-                    label = "Export",
+                    label = stringResource(R.string.tournament_btn_export),
                     color = Color(0xFFFF9800),
                     onClick = { exportLauncher.launch("turnier_strategien.bgsc") },
                     shadowStyle = shadowStyle
@@ -275,7 +286,7 @@ fun TournamentSelectionScreen(
 
                 SmallOptionButton(
                     icon = Icons.Default.FileDownload,
-                    label = "Import",
+                    label = stringResource(R.string.tournament_btn_import),
                     color = Color(0xFF00BCD4),
                     onClick = { importLauncher.launch(arrayOf("*/*")) },
                     shadowStyle = shadowStyle
@@ -283,7 +294,7 @@ fun TournamentSelectionScreen(
 
                 SmallOptionButton(
                     icon = Icons.Default.PowerSettingsNew,
-                    label = "Aus",
+                    label = stringResource(R.string.tournament_btn_deactivate),
                     color = Color(0xFFF44336),
                     onClick = { showExitConfirmationState.value = true },
                     shadowStyle = shadowStyle

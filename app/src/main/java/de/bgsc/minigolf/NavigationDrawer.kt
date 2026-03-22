@@ -20,6 +20,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +47,14 @@ fun NavigationDrawer(
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val sound = LocalSoundFeedback.current
+    
+    val activatedMessage = stringResource(R.string.tournament_easter_egg_activated)
+    val stepsMessage1 = stringResource(R.string.tournament_easter_egg_steps, 1)
+    val stepsMessage2 = stringResource(R.string.tournament_easter_egg_steps, 2)
+    val stepsMessage3 = stringResource(R.string.tournament_easter_egg_steps, 3)
+    val stepsMessage4 = stringResource(R.string.tournament_easter_egg_steps, 4)
+    val stepsMessage5 = stringResource(R.string.tournament_easter_egg_steps, 5)
+
     var devClickCount by remember { mutableIntStateOf(0) }
     var lastClickTime by remember { mutableLongStateOf(0L) }
     var currentToast by remember { mutableStateOf<Toast?>(null) }
@@ -87,7 +96,7 @@ fun NavigationDrawer(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
-                        ) { /* Konsumiert Klicks */ }
+                        ) { }
                 ) {
                     Column(
                         modifier = Modifier
@@ -95,7 +104,6 @@ fun NavigationDrawer(
                             .statusBarsPadding()
                             .padding(top = 20.adaptiveDp())
                     ) {
-                        // Header
                         Row(
                             modifier = Modifier.padding(horizontal = 20.adaptiveDp(), vertical = 10.adaptiveDp()),
                             verticalAlignment = Alignment.CenterVertically
@@ -106,9 +114,8 @@ fun NavigationDrawer(
                                 modifier = Modifier.size(40.adaptiveDp())
                             )
                             Spacer(Modifier.width(12.adaptiveDp()))
-                            @Suppress("SpellCheckingInspection")
                             Text(
-                                text = "BGSC \"Gut Schlag\"\nGladbeck e.V.",
+                                text = stringResource(R.string.drawer_club_name),
                                 color = Color.Black,
                                 fontSize = 18.adaptiveSp(),
                                 lineHeight = 20.adaptiveSp(),
@@ -122,17 +129,16 @@ fun NavigationDrawer(
                             modifier = Modifier.padding(vertical = 10.adaptiveDp())
                         )
 
-                        // Menu Items
                         SideMenuItem(
                             icon = Icons.Default.Add,
-                            text = "Spieler hinzufügen",
+                            text = stringResource(R.string.menu_add_player),
                             onClick = { if (playerCount < 10) onAddPlayerClick() },
                             contentColor = Color.Black
                         )
                         if (numRounds < 4) {
                             SideMenuItem(
                                 icon = Icons.Default.AddCircleOutline,
-                                text = "Nächste Runde",
+                                text = stringResource(R.string.menu_next_round),
                                 onClick = {
                                     if (hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onNextRoundClick()
@@ -142,7 +148,7 @@ fun NavigationDrawer(
                         }
                         SideMenuItem(
                             icon = Icons.Default.Refresh,
-                            text = "Neu starten",
+                            text = stringResource(R.string.menu_restart),
                             onClick = {
                                 if (hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onRestartClick()
@@ -151,7 +157,7 @@ fun NavigationDrawer(
                         )
                         SideMenuItem(
                             icon = Icons.Default.Stop,
-                            text = "Spiel beenden",
+                            text = stringResource(R.string.menu_end_game),
                             onClick = {
                                 if (hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onEndGameClick()
@@ -164,7 +170,7 @@ fun NavigationDrawer(
                         if (isTurnierMode) {
                             SideMenuItem(
                                 icon = Icons.Default.MilitaryTech,
-                                text = "Turnier-Modus",
+                                text = stringResource(R.string.menu_tournament_mode),
                                 onClick = onTournamentClick,
                                 contentColor = Color(0xFFD4AF37)
                             )
@@ -172,13 +178,13 @@ fun NavigationDrawer(
                         
                         SideMenuItem(
                             icon = Icons.Default.EmojiEvents,
-                            text = "Ergebniskarte",
+                            text = stringResource(R.string.menu_results_card),
                             onClick = onShowResultsClick,
                             contentColor = Color.Black
                         )
                         SideMenuItem(
                             icon = Icons.Default.History,
-                            text = "Historie",
+                            text = stringResource(R.string.menu_history),
                             onClick = onHistoryClick,
                             contentColor = Color.Black
                         )
@@ -190,14 +196,12 @@ fun NavigationDrawer(
                             modifier = Modifier.padding(vertical = 10.adaptiveDp())
                         )
 
-                        // Footer
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 8.adaptiveDp(), end = 20.adaptiveDp(), bottom = 10.adaptiveDp()),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Settings Button (Ganz links)
                             IconButton(
                                 onClick = {
                                     sound.playClick()
@@ -215,14 +219,13 @@ fun NavigationDrawer(
                                     )
                                     Icon(
                                         Icons.Default.Settings,
-                                        contentDescription = "Einstellungen",
+                                        contentDescription = stringResource(R.string.menu_settings),
                                         tint = Color.Black,
                                         modifier = Modifier.size(26.adaptiveDp())
                                     )
                                 }
                             }
 
-                            // Copyright & Info (Rechts daneben zentriert)
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
@@ -236,26 +239,34 @@ fun NavigationDrawer(
                                         lastClickTime = currentTime
                                         if (devClickCount in 2..6) {
                                             val stepsLeft = 7 - devClickCount
+                                            val msg = when(stepsLeft) {
+                                                1 -> stepsMessage1
+                                                2 -> stepsMessage2
+                                                3 -> stepsMessage3
+                                                4 -> stepsMessage4
+                                                5 -> stepsMessage5
+                                                else -> ""
+                                            }
                                             currentToast?.cancel()
-                                            currentToast = Toast.makeText(context, "Noch $stepsLeft Schritte...", Toast.LENGTH_SHORT)
+                                            currentToast = Toast.makeText(context, msg, Toast.LENGTH_SHORT)
                                             currentToast?.show()
                                         } else if (devClickCount >= 7) {
                                             onTurnierModeToggle(true)
                                             currentToast?.cancel()
-                                            Toast.makeText(context, "Turnier-Modus aktiviert!", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, activatedMessage, Toast.LENGTH_SHORT).show()
                                             devClickCount = 0
                                         }
                                     },
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "© BGSC \"Gut Schlag\" Gladbeck e.V.",
+                                    text = stringResource(R.string.drawer_copyright),
                                     color = Color.Black.copy(alpha = 0.4f),
                                     fontSize = 10.adaptiveSp(),
                                     fontFamily = CalibriFontFamily
                                 )
                                 Text(
-                                    text = "Created by Patrick",
+                                    text = stringResource(R.string.drawer_credits),
                                     color = Color.Black.copy(alpha = 0.4f),
                                     fontSize = 10.adaptiveSp(),
                                     fontFamily = CalibriFontFamily

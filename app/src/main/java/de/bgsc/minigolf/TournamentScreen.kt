@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,14 +34,15 @@ fun TournamentScreen(
     val notes = viewModel.tournamentNotes
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val saveSuccessMessage = stringResource(R.string.tournament_save_success)
     
     var expanded by remember { mutableStateOf(false) }
     val systems = listOf(
-        "Miniaturgolf (Eternit)",
-        "Minigolf (Beton)",
-        "Filzgolf",
-        "Cobigolf",
-        "Sterngolf"
+        stringResource(R.string.system_eternit),
+        stringResource(R.string.system_beton),
+        stringResource(R.string.system_filz),
+        stringResource(R.string.system_cobi),
+        stringResource(R.string.system_stern)
     )
 
     val shadowStyle = TextStyle(
@@ -59,7 +61,6 @@ fun TournamentScreen(
             .statusBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header mit Save Button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -73,14 +74,14 @@ fun TournamentScreen(
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                                contentDescription = "Zurück",
+                                contentDescription = stringResource(R.string.dialog_cancel),
                                 tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
                     Spacer(Modifier.width(8.adaptiveDp()))
                     Text(
-                        if (viewModel.currentTournamentNoteId == null) "Notiz erstellen" else "Notiz bearbeiten",
+                        if (viewModel.currentTournamentNoteId == null) stringResource(R.string.tournament_title_new) else stringResource(R.string.tournament_title_edit),
                         fontSize = 20.adaptiveSp(),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -90,21 +91,20 @@ fun TournamentScreen(
                 
                 IconButton(onClick = golfClick {
                     viewModel.saveTournamentNotes()
-                    Toast.makeText(context, "Notizen gespeichert", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, saveSuccessMessage, Toast.LENGTH_SHORT).show()
                     onSaveFinished()
                 }) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Save, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
                         Icon(
                             imageVector = Icons.Default.Save, 
-                            contentDescription = "Speichern", 
+                            contentDescription = stringResource(R.string.dialog_save), 
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }
             }
 
-            // Eingabebereich für Ort und System (Anlagentyp)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -115,7 +115,7 @@ fun TournamentScreen(
                     onValueChange = { viewModel.tournamentLocation = it },
                     label = { 
                         Text(
-                            "Ort", 
+                            stringResource(R.string.tournament_location_label), 
                             fontFamily = CalibriFontFamily,
                             style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         ) 
@@ -147,7 +147,7 @@ fun TournamentScreen(
                         readOnly = true,
                         label = { 
                             Text(
-                                "Anlagentyp", 
+                                stringResource(R.string.tournament_system_label), 
                                 fontFamily = CalibriFontFamily,
                                 style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                             ) 
@@ -185,14 +185,12 @@ fun TournamentScreen(
 
             Spacer(modifier = Modifier.height(16.adaptiveDp()))
 
-            // Tabelle
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(16.adaptiveDp())
             ) {
-                // Table Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -200,10 +198,10 @@ fun TournamentScreen(
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("#", modifier = Modifier.width(30.dp), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
-                    Text("Bälle", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
-                    Text("Abschlag", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
-                    Text("Notizen", modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                    Text(stringResource(R.string.column_header_number), modifier = Modifier.width(30.dp), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                    Text(stringResource(R.string.tournament_balls), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                    Text(stringResource(R.string.tournament_tee_off), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                    Text(stringResource(R.string.tournament_notes), modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
                 }
 
                 notes.forEachIndexed { index, note ->
@@ -233,7 +231,6 @@ fun TournamentRow(
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Loch Nummer
         Text(
             text = holeNumber.toString(),
             modifier = Modifier.width(30.dp),
@@ -244,7 +241,6 @@ fun TournamentRow(
             style = shadowStyle.copy(color = MaterialTheme.colorScheme.onBackground)
         )
 
-        // Bälle Column
         TournamentTextField(
             value = note.ball,
             onValueChange = { onUpdate(it, note.startPoint, note.notes) },
@@ -252,7 +248,6 @@ fun TournamentRow(
             shadowStyle = shadowStyle
         )
 
-        // Abschlagspunkt Column
         TournamentTextField(
             value = note.startPoint,
             onValueChange = { onUpdate(note.ball, it, note.notes) },
@@ -260,7 +255,6 @@ fun TournamentRow(
             shadowStyle = shadowStyle
         )
 
-        // Notizen Column
         TournamentTextField(
             value = note.notes,
             onValueChange = { onUpdate(note.ball, note.startPoint, it) },

@@ -5,8 +5,8 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
-      - '[0-9]*' # Akzeptiert jetzt auch Tags, die mit einer Zahl beginnen (z.B. 1.0.0)
+      - '[0-9]*'    # Tags für normale Releases (z.B. 1.0.0)
+      - '*-beta*'   # Tags für Beta-Versionen (z.B. 1.1.0-beta1)
   workflow_dispatch:
 
 permissions:
@@ -39,13 +39,12 @@ jobs:
           name: debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
-      # Release-Schritte: Prüft nun einfach, ob es irgendein Tag ist
       - name: Decode Keystore
-        if: contains(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         run: echo "${{ secrets.SIGNING_KEY }}" | base64 --decode > app/release.keystore
 
       - name: Build Release APK
-        if: contains(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         run: ./gradlew assembleRelease
         env:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -53,14 +52,14 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Create Release
-        if: contains(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/release/*.apk
           tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          name: ${{ contains(github.ref_name, 'beta') && 'Beta ' || 'Release ' }}${{ github.ref_name }}
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -73,39 +73,38 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     val tournamentHistory: StateFlow<List<TournamentNoteResult>> = tournamentNoteDao.getAllResults()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // UI States
     var currentScreen by mutableStateOf<Screen>(Screen.Main)
     
-    var players by mutableStateOf(listOf(Player("Spieler 1", Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f))))
+    var players by mutableStateOf(listOf(Player(application.getString(R.string.default_player_name, 1), Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f))))
         private set
 
-    var selectedSystem by mutableStateOf("Miniaturgolf\n(Eternit)")
+    var selectedSystem by mutableStateOf(application.getString(R.string.system_eternit_newline))
+    
     var currentLocation by mutableStateOf("")
     
-    // Settings
     var hapticEnabled by mutableStateOf(prefs.getBoolean("haptic_enabled", true))
     var keepScreenOn by mutableStateOf(prefs.getBoolean("keep_screen_on", false))
     var soundEnabled by mutableStateOf(prefs.getBoolean("sound_enabled", true))
     var isTurnierMode by mutableStateOf(prefs.getBoolean("turnier_mode", false))
+    
+    var currentLanguage by mutableStateOf(prefs.getString("language", "de") ?: "de")
+
     var tournamentTheme by mutableStateOf(
         TournamentTheme.entries.getOrElse(prefs.getInt("tournament_theme", TournamentTheme.SYSTEM.ordinal)) { TournamentTheme.SYSTEM }
     )
 
-    // App Info - Holt sich die Version sicher vom System, ohne BuildConfig zu benötigen
     val appVersion: String = try {
         val pInfo = application.packageManager.getPackageInfo(application.packageName, 0)
-        pInfo.versionName ?: "unknown"
+        pInfo.versionName ?: application.getString(R.string.error_unknown)
     } catch (_: Exception) {
-        "unknown"
+        application.getString(R.string.error_unknown)
     }
 
-    // Update States
     var updateAvailable by mutableStateOf<UpdateInfo?>(null)
     var isDownloadingUpdate by mutableStateOf(false)
     var downloadProgress by mutableFloatStateOf(0f)
 
     init {
-        Log.i("GolfViewModel", "App gestartet. Version: $appVersion")
         checkForUpdates()
     }
 
@@ -122,17 +121,17 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                     },
                     onNoUpdate = {
                         viewModelScope.launch(Dispatchers.Main) {
-                            if (manual) onFinished?.invoke("App ist auf dem neuesten Stand.")
+                            if (manual) onFinished?.invoke(getApplication<Application>().getString(R.string.update_up_to_date))
                         }
                     },
                     onError = { error ->
                         viewModelScope.launch(Dispatchers.Main) {
-                            if (manual) onFinished?.invoke("Fehler beim Update-Check: $error")
+                            if (manual) onFinished?.invoke(getApplication<Application>().getString(R.string.update_error_check, error))
                         }
                     }
                 )
             } catch (e: Exception) {
-                Log.e("GolfViewModel", "Fehler im Update-Check Prozess", e)
+                Log.e("GolfViewModel", "Update check error", e)
             }
         }
     }
@@ -148,11 +147,12 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Tournament Data
     var tournamentNotes by mutableStateOf(List(18) { HoleNote() })
         private set
+    
     var tournamentLocation by mutableStateOf("")
-    var tournamentGameMode by mutableStateOf("Miniaturgolf (Eternit)")
+    var tournamentGameMode by mutableStateOf(application.getString(R.string.system_eternit))
+    
     var currentTournamentNoteId by mutableStateOf<Long?>(null)
         private set
 
@@ -189,12 +189,16 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit { putBoolean("turnier_mode", enabled) }
     }
 
+    fun setLanguage(languageCode: String) {
+        currentLanguage = languageCode
+        prefs.edit { putString("language", languageCode) }
+    }
+
     fun setTournamentDesign(theme: TournamentTheme) {
         tournamentTheme = theme
         prefs.edit { putInt("tournament_theme", theme.ordinal) }
     }
 
-    // Tournament Export / Import
     fun exportTournamentNotes(context: Context, uri: Uri, onResult: (Boolean) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -209,7 +213,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 withContext(Dispatchers.Main) { onResult(true) }
             } catch (e: Exception) {
-                Log.e("GolfViewModel", "Export fehlgeschlagen", e)
+                Log.e("GolfViewModel", "Export failed", e)
                 withContext(Dispatchers.Main) { onResult(false) }
             }
         }
@@ -231,7 +235,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                if (json.isBlank()) throw Exception("Datei leer")
+                if (json.isBlank()) throw Exception(getApplication<Application>().getString(R.string.error_import_empty))
 
                 val jsonElement = JsonParser.parseString(json)
                 val notesToImport = mutableListOf<JsonObject>()
@@ -253,7 +257,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                if (notesToImport.isEmpty()) throw Exception("Keine Notizen gefunden")
+                if (notesToImport.isEmpty()) throw Exception(getApplication<Application>().getString(R.string.error_import_no_notes))
 
                 var importedCount = 0
                 notesToImport.forEach { noteObj ->
@@ -279,12 +283,12 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                         tournamentNoteDao.insert(cleanNote)
                         importedCount++
                     } catch (e: Exception) {
-                        Log.e("GolfViewModel", "Eintrag fehlerhaft", e)
+                        Log.e("GolfViewModel", "Entry corrupt", e)
                     }
                 }
                 withContext(Dispatchers.Main) { onResult(true, importedCount) }
             } catch (e: Exception) {
-                Log.e("GolfViewModel", "Import fehlgeschlagen: ${e.message}", e)
+                Log.e("GolfViewModel", "Import failed", e)
                 withContext(Dispatchers.Main) { onResult(false, 0) }
             }
         }
@@ -381,7 +385,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun resetTournamentNotes() {
         tournamentNotes = List(18) { HoleNote() }
         tournamentLocation = ""
-        tournamentGameMode = "Miniaturgolf (Eternit)"
+        tournamentGameMode = getApplication<Application>().getString(R.string.system_eternit)
         currentTournamentNoteId = null
     }
 
@@ -420,7 +424,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun resetAll() {
-        players = listOf(Player("Spieler 1", Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f)))
+        players = listOf(Player(getApplication<Application>().getString(R.string.default_player_name, 1), Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f)))
         currentLocation = ""
         resetTournamentNotes()
     }

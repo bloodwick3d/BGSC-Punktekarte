@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -64,7 +65,6 @@ fun ScoreTable(
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     
-    // RESPONSIVE LOGIK
     val footerFactor = if(numRounds > 1) 1.5f else 1.0f
     val stickyColumnWidth = 35.adaptiveDp()
     val sidePadding = 10.adaptiveDp()
@@ -79,11 +79,9 @@ fun ScoreTable(
         }
     }
 
-    // Drag-and-Drop States
     var draggingPlayerIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffsetX by remember { mutableFloatStateOf(0f) }
     
-    // State für Bestätigungs-Dialog beim Löschen einer Runde (explizit als MutableState für Linter)
     val roundToDeleteState = remember { mutableStateOf<Int?>(null) }
 
     Column(
@@ -93,11 +91,11 @@ fun ScoreTable(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         
-        // HEADER ROW
         BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
             val rowHeight = maxHeight
             Row(modifier = Modifier.horizontalScroll(scrollState).fillMaxHeight(), verticalAlignment = Alignment.CenterVertically) {
                 var showRoundMenu by remember { mutableStateOf(false) }
+                
                 Box(
                     modifier = Modifier
                         .width(stickyColumnWidth)
@@ -146,7 +144,7 @@ fun ScoreTable(
                                             Icon(Icons.Default.Delete, null, tint = Color.White, modifier = Modifier.padding(horizontal = 16.adaptiveDp()).scale((offsetX.absoluteValue / 200f).coerceIn(0.5f, 1.2f))) 
                                         }
                                         DropdownMenuItem(
-                                            text = { Text("Runde ${rIdx + 1}", color = Color.Black, style = shadowStyle.copy(color = Color.Black)) },
+                                            text = { Text(stringResource(R.string.tournament_round_label, rIdx + 1), color = Color.Black, style = shadowStyle.copy(color = Color.Black)) },
                                             onClick = golfClick { showRoundMenu = false },
                                             modifier = Modifier.offset { IntOffset(offsetX.roundToInt(), 0) }
                                         )
@@ -159,7 +157,7 @@ fun ScoreTable(
                                         Row(verticalAlignment = Alignment.CenterVertically) { 
                                             Icon(Icons.Default.Add, null, tint = Color.Black)
                                             Spacer(Modifier.width(8.adaptiveDp()))
-                                            Text("Neue Runde", color = Color.Black, style = shadowStyle.copy(color = Color.Black)) 
+                                            Text(stringResource(R.string.tournament_new_round), color = Color.Black, style = shadowStyle.copy(color = Color.Black))
                                         } 
                                     },
                                     onClick = golfClick { onAddRound(); showRoundMenu = false }
@@ -256,7 +254,6 @@ fun ScoreTable(
         
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Mittelteil (18 Löcher)
         Column(modifier = Modifier.weight(18f)) {
             (1..18).forEach { hole ->
                 val hIdx = hole - 1
@@ -340,7 +337,6 @@ fun ScoreTable(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // FOOTER ROW
         BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(footerFactor), contentAlignment = Alignment.Center) {
             val rowHeight = maxHeight
             Row(modifier = Modifier.horizontalScroll(scrollState).fillMaxHeight(), verticalAlignment = Alignment.CenterVertically) {
@@ -420,13 +416,12 @@ fun ScoreTable(
         }
     }
 
-    // Bestätigungs-Dialog für das Löschen einer Runde
     val currentRoundToDelete = roundToDeleteState.value
     if (currentRoundToDelete != null) {
         AlertDialog(
             onDismissRequest = { roundToDeleteState.value = null },
-            title = { Text("Runde löschen?", style = shadowStyle.copy(fontWeight = FontWeight.Bold, color = Color.Black)) },
-            text = { Text("Möchtest du Runde ${currentRoundToDelete + 1} wirklich löschen? Alle eingetragenen Punkte dieser Runde gehen verloren.", style = shadowStyle.copy(color = Color.Black)) },
+            title = { Text(stringResource(R.string.dialog_confirm_delete_round_title), style = shadowStyle.copy(fontWeight = FontWeight.Bold, color = Color.Black)) },
+            text = { Text(stringResource(R.string.dialog_delete_round_confirm_text_extended, currentRoundToDelete + 1), style = shadowStyle.copy(color = Color.Black)) },
             confirmButton = {
                 Button(
                     onClick = golfClick {
@@ -437,7 +432,7 @@ fun ScoreTable(
                     shape = RoundedCornerShape(20.dp),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                 ) {
-                    Text("Löschen", color = Color.White, style = shadowStyle.copy(color = Color.White))
+                    Text(stringResource(R.string.dialog_delete), color = Color.White, style = shadowStyle.copy(color = Color.White))
                 }
             },
             dismissButton = {
@@ -447,7 +442,7 @@ fun ScoreTable(
                     shape = RoundedCornerShape(20.dp),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                 ) {
-                    Text("Abbrechen", color = Color.Black, style = shadowStyle.copy(color = Color.Black))
+                    Text(stringResource(R.string.dialog_cancel), color = Color.Black, style = shadowStyle.copy(color = Color.Black))
                 }
             },
             containerColor = Color.White
