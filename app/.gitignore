@@ -1,0 +1,27 @@
+gitignore
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+.gradle/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# Build-Outputs
+build/
+app/build/
+app/release/  <-- WICHTIG!
+
+# Keystores (Sicherheit!)
+*.jks
+*.keystore
+
+# macOS
+.DS_Store
+
+# Kotlin
+.kotlin/

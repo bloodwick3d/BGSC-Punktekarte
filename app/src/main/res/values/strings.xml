@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BGSC Punktekarte</string>
+
+    <!-- Navigation & Menu -->
+    <string name="menu_add_player">Spieler hinzufügen</string>
+    <string name="menu_next_round">Nächste Runde</string>
+    <string name="menu_restart">Neu starten</string>
+    <string name="menu_end_game">Spiel beenden</string>
+    <string name="menu_history">Historie</string>
+    <string name="menu_tournament_mode">Turnier-Modus</string>
+    <string name="menu_results_card">Ergebniskarte</string>
+    <string name="menu_settings">Einstellungen</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_confirm_delete_round_title">Runde löschen?</string>
+    <string name="dialog_confirm_delete_round_text">Möchtest du diese Runde wirklich löschen? Alle Punkte gehen verloren.</string>
+    <string name="dialog_save">Speichern</string>
+    <string name="dialog_cancel">Abbrechen</string>
+    <string name="dialog_delete">Löschen</string>
+    <string name="dialog_add">Hinzufügen</string>
+
+    <!-- Settings -->
+    <string name="settings_vibration">Vibration</string>
+    <string name="settings_sound">Touch-Sound</string>
+    <string name="settings_keep_screen_on">Wachbleiben</string>
+
+    <!-- Update System -->
+    <string name="update_available_title">Update verfügbar!</string>
+    <string name="update_available_message">Eine neue Version (%1$s) ist verfügbar. Möchtest du sie jetzt installieren?</string>
+    <string name="update_download_later">Später</string>
+    <string name="update_download_now">Update laden</string>
+    <string name="update_changes_label">Änderungen:</string>
+    <string name="update_error_check">Fehler beim Update-Check: %1$s</string>
+    <string name="update_up_to_date">App ist auf dem neuesten Stand.</string>
+</resources>

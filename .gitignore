@@ -1,0 +1,27 @@
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+.gradle/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# Build-Outputs (Wichtig: app/release/ wird jetzt ignoriert)
+build/
+app/build/
+app/release/
+
+# Keystores (Sicherheit!)
+*.jks
+*.keystore
+
+# macOS
+.DS_Store
+
+# Kotlin
+.kotlin/
+*.kotlin_module
