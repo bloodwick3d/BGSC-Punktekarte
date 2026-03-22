@@ -28,7 +28,8 @@ import androidx.compose.ui.unit.sp
 fun TournamentScreen(
     viewModel: GolfViewModel,
     onBack: () -> Unit,
-    onSaveFinished: () -> Unit
+    onSaveFinished: () -> Unit,
+    fullScreenEnabled: Boolean
 ) {
     val notes = viewModel.tournamentNotes
     val scrollState = rememberScrollState()
@@ -56,7 +57,7 @@ fun TournamentScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
+            .then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header mit Save Button

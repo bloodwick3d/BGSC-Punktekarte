@@ -36,7 +36,8 @@ import java.util.*
 @Composable
 fun HistoryScreen(
     viewModel: GolfViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    fullScreenEnabled: Boolean
 ) {
     val history by viewModel.gameHistory.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -115,7 +116,7 @@ fun HistoryScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
             Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background, shadowElevation = 4.dp) {
@@ -205,8 +206,8 @@ fun HistoryScreen(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(64.adaptiveDp()).offset(2.dp, 2.dp), tint = Color.Black.copy(alpha = 0.1f))
-                                Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(64.adaptiveDp()), tint = Color.Gray.copy(alpha = 0.5f))
+                                Icon(Icons.Default.History, contentDescription = null, tint = Color.Black.copy(alpha = 0.1f), modifier = Modifier.size(64.adaptiveDp()).offset(2.dp, 2.dp))
+                                Icon(Icons.Default.History, contentDescription = null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(64.adaptiveDp()))
                             }
                             Spacer(Modifier.height(16.adaptiveDp()))
                             Text(if (searchQuery.isEmpty()) "Noch keine Spiele gespeichert" else "Keine Ergebnisse", color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
