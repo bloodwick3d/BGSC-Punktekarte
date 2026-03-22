@@ -7,6 +7,7 @@ on:
     tags:
       - '[0-9]*'    # Tags für normale Releases (z.B. 1.0.0)
       - '*-beta*'   # Tags für Beta-Versionen (z.B. 1.1.0-beta1)
+
   workflow_dispatch:
 
 permissions:
@@ -59,7 +60,8 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: ${{ contains(github.ref_name, 'beta') && 'Beta ' || 'Release ' }}${{ github.ref_name }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, 'beta') }}
+          # Markiert das Release als Pre-release, wenn der Tag 'beta' oder 'alpha' enthält
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

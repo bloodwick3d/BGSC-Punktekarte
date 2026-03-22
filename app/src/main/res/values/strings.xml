@@ -28,6 +28,7 @@
     <string name="dialog_remove_player">Entfernen</string>
 
     <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
     <string name="settings_vibration">Vibration</string>
     <string name="settings_sound">Touch-Sound</string>
     <string name="settings_keep_screen_on">Wachbleiben</string>

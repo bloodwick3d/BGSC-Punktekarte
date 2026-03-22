@@ -33,6 +33,7 @@ fun NavigationDrawer(
     playerCount: Int,
     numRounds: Int,
     hapticEnabled: Boolean,
+    fullScreenEnabled: Boolean,
     isTurnierMode: Boolean,
     onAddPlayerClick: () -> Unit,
     onShowResultsClick: () -> Unit,
@@ -101,7 +102,7 @@ fun NavigationDrawer(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .statusBarsPadding()
+                            .then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())
                             .padding(top = 20.adaptiveDp())
                     ) {
                         Row(
