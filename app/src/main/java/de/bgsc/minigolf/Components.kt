@@ -6,12 +6,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -37,6 +40,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
@@ -198,7 +202,13 @@ fun TournamentThemeWrapper(theme: TournamentTheme, content: @Composable () -> Un
 }
 
 @Composable
-fun SideMenuItem(icon: ImageVector, text: String, onClick: () -> Unit, contentColor: Color = Color.White) {
+fun SideMenuItem(
+    icon: ImageVector, 
+    text: String, 
+    badge: String? = null,
+    onClick: () -> Unit, 
+    contentColor: Color = Color.White
+) {
     val shadowStyle = TextStyle(
         fontFamily = CalibriFontFamily,
         shadow = Shadow(
@@ -208,9 +218,13 @@ fun SideMenuItem(icon: ImageVector, text: String, onClick: () -> Unit, contentCo
         )
     )
 
-    Row(modifier = Modifier.fillMaxWidth().golfClickable {
-        onClick()
-    }.padding(vertical = 10.adaptiveDp(), horizontal = 20.adaptiveDp()), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .golfClickable { onClick() }
+            .padding(vertical = 10.adaptiveDp(), horizontal = 20.adaptiveDp()), 
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 icon, 
@@ -233,8 +247,26 @@ fun SideMenuItem(icon: ImageVector, text: String, onClick: () -> Unit, contentCo
             color = contentColor, 
             fontSize = 14.adaptiveSp(), 
             fontWeight = FontWeight.Bold,
-            style = shadowStyle
+            style = shadowStyle,
+            modifier = Modifier.weight(1f)
         )
+        
+        if (badge != null) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(Color.Red),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = badge,
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
     }
 }
 

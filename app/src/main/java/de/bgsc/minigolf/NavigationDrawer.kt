@@ -31,12 +31,14 @@ fun NavigationDrawer(
     onDismiss: () -> Unit,
     playerCount: Int,
     numRounds: Int,
+    activeGamesCount: Int, // NEU: Anzahl der aktiven Spiele
     hapticEnabled: Boolean,
     fullScreenEnabled: Boolean,
     isTurnierMode: Boolean,
     onAddPlayerClick: () -> Unit,
     onShowResultsClick: () -> Unit,
     onHistoryClick: () -> Unit,
+    onActiveGamesClick: () -> Unit, // NEU: Klick auf aktive Spiele
     onTournamentClick: () -> Unit,
     onNextRoundClick: () -> Unit,
     onRestartClick: () -> Unit,
@@ -49,7 +51,6 @@ fun NavigationDrawer(
     val sound = LocalSoundFeedback.current
     var devClickCount by remember { mutableIntStateOf(0) }
     var lastClickTime by remember { mutableLongStateOf(0L) }
-    var currentToast by remember { mutableStateOf<Toast?>(null) }
 
     val shadowStyle = TextStyle(
         fontFamily = CalibriFontFamily,
@@ -130,6 +131,16 @@ fun NavigationDrawer(
                             onClick = { if (playerCount < 10) onAddPlayerClick() },
                             contentColor = Color.Black
                         )
+                        
+                        // NEU: Aktive Spiele mit Badge
+                        SideMenuItem(
+                            icon = Icons.Default.PlayCircleOutline,
+                            text = "Aktive Spiele",
+                            badge = if (activeGamesCount > 0) activeGamesCount.toString() else null,
+                            onClick = onActiveGamesClick,
+                            contentColor = Color.Black
+                        )
+
                         if (numRounds < 4) {
                             SideMenuItem(
                                 icon = Icons.Default.AddCircleOutline,
@@ -191,14 +202,13 @@ fun NavigationDrawer(
                             modifier = Modifier.padding(vertical = 10.adaptiveDp())
                         )
 
-                        // Footer
+                        // Footer (Settings & Info)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 8.adaptiveDp(), end = 20.adaptiveDp(), bottom = 10.adaptiveDp()),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Settings Button (Ganz links)
                             IconButton(
                                 onClick = {
                                     sound.playClick()
@@ -223,7 +233,6 @@ fun NavigationDrawer(
                                 }
                             }
 
-                            // Copyright & Info (Rechts daneben zentriert)
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
@@ -235,14 +244,8 @@ fun NavigationDrawer(
                                         val currentTime = System.currentTimeMillis()
                                         if (currentTime - lastClickTime > 1000) { devClickCount = 1 } else { devClickCount++ }
                                         lastClickTime = currentTime
-                                        if (devClickCount in 2..6) {
-                                            val stepsLeft = 7 - devClickCount
-                                            currentToast?.cancel()
-                                            currentToast = Toast.makeText(context, "Noch $stepsLeft Schritte...", Toast.LENGTH_SHORT)
-                                            currentToast?.show()
-                                        } else if (devClickCount >= 7) {
+                                        if (devClickCount >= 7) {
                                             onTurnierModeToggle(true)
-                                            currentToast?.cancel()
                                             Toast.makeText(context, "Turnier-Modus aktiviert!", Toast.LENGTH_SHORT).show()
                                             devClickCount = 0
                                         }
