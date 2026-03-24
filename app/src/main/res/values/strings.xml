@@ -32,8 +32,8 @@
     <string name="settings_vibration">Vibration</string>
     <string name="settings_sound">Touch-Sound</string>
     <string name="settings_keep_screen_on">Wachbleiben</string>
+    <string name="settings_full_screen">Vollbildmodus</string>
     <string name="settings_language">Sprache</string>
-    <string name="settings_title">Einstellungen</string>
     <string name="settings_btn_done">Fertig</string>
 
     <!-- Common Symbols & Formats -->
@@ -157,8 +157,17 @@
     <string name="info_privacy_title">Datenschutz</string>
     <string name="info_privacy_content">Diese App arbeitet lokal. Alle Spielstände und Notizen werden ausschließlich auf deinem Gerät gespeichert. Es werden keine persönlichen Daten erfasst, analysiert oder an Dritte weitergegeben. Lediglich beim Prüfen auf Updates wird eine Verbindung zu GitHub hergestellt, um die neueste Version zu finden.</string>
     <string name="info_licenses_title">Lizenzen &amp; Open Source</string>
-    <string name="info_licenses_content">Diese App nutzt die folgenden Open-Source-Bibliotheken:\n\n• Android Jetpack &amp; Compose (Apache 2.0)\n• Material Design Components 3 (Apache 2.0)\n• Room Persistence Library (Apache 2.0)\n• Kotlin Standard Library (Apache 2.0)\n• Google Gson (Apache 2.0)\n• Square OkHttp (Apache 2.0)\n• AndroidX Core KTX &amp; Lifecycle (Apache 2.0)\n\nEin besonderer Dank geht an die Open-Source-Community für die Bereitstellung dieser großartigen Werkzeuge.</string>
+    <string name="info_licenses_content">Diese App nutzt die folgenden Open-Source-Bibliotheken:\n\n• Android Jetpack &amp; Compose (Apache 2.0)\n• Material Design Components 3 (Apache 2.0)\n• Room Persistence Library (Apache 2.0)\n• Kotlin Standard Library (Apache 2.0)\n• Google Gson (Apache 2.0)\n• Square OkHttp (Apache 2.0)\n• AndroidX Core KTX &amp; Lifecycle (Apache 2.0)\n\nEin besonderer Dank geht an die Open-Source-Community für die Bereitstellung dieser großartigen Weltzeuge.</string>
     <string name="info_expand">Ausklappen</string>
     <string name="info_collapse">Einklappen</string>
     <string name="info_btn_close">Schließen</string>
+
+    <!-- Neue Navigationseinträge -->
+    <string name="menu_active_games">Aktive Spiele</string>
+    <string name="menu_finished_games">Beendete Spiele</string>
+    <string name="menu_new_game">Neues Spiel</string>
+    
+    <!-- Footer Begriffe -->
+    <string name="drawer_created_by">Created by Patrick</string>
+    <string name="settings_icon_desc">Einstellungen</string>
 </resources>

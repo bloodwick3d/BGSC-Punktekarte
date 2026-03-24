@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,12 +34,12 @@ fun AppSettingsDialog(
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     keepScreenOn: Boolean,
-    currentLanguage: String,
+    fullScreenEnabled: Boolean,
     shadowStyle: TextStyle,
     onHapticToggle: (Boolean) -> Unit,
     onSoundToggle: (Boolean) -> Unit,
     onKeepScreenOnToggle: (Boolean) -> Unit,
-    onLanguageChange: (String) -> Unit,
+    onFullScreenToggle: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     onShowInfo: () -> Unit
 ) {
@@ -104,44 +103,13 @@ fun AppSettingsDialog(
                     onCheckedChange = { onKeepScreenOnToggle(it) },
                     shadowStyle = shadowStyle
                 )
-                
-                // Language Selector
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.05f))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Language, null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.size(24.dp).offset(1.dp, 1.dp))
-                            Icon(Icons.Default.Language, null, tint = Color.Black, modifier = Modifier.size(24.dp))
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Text(stringResource(R.string.settings_language), style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Medium), fontSize = 16.sp)
-                    }
-                    
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "DE", 
-                            modifier = Modifier.golfClickable { onLanguageChange("de") },
-                            color = if (currentLanguage == "de") Color(0xFFFFD54F) else Color.Black.copy(alpha = 0.5f),
-                            fontWeight = if (currentLanguage == "de") FontWeight.Bold else FontWeight.Normal,
-                            style = shadowStyle.copy(color = if (currentLanguage == "de") Color(0xFFFFD54F) else Color.Black.copy(alpha = 0.5f))
-                        )
-                        Text(" / ", style = shadowStyle.copy(color = Color.Black.copy(alpha = 0.3f)))
-                        Text(
-                            "EN", 
-                            modifier = Modifier.golfClickable { onLanguageChange("en") },
-                            color = if (currentLanguage == "en") Color(0xFFFFD54F) else Color.Black.copy(alpha = 0.5f),
-                            fontWeight = if (currentLanguage == "en") FontWeight.Bold else FontWeight.Normal,
-                            style = shadowStyle.copy(color = if (currentLanguage == "en") Color(0xFFFFD54F) else Color.Black.copy(alpha = 0.5f))
-                        )
-                    }
-                }
+                SettingsSwitchRow(
+                    icon = Icons.Default.Fullscreen,
+                    text = stringResource(R.string.settings_full_screen),
+                    checked = fullScreenEnabled,
+                    onCheckedChange = { onFullScreenToggle(it) },
+                    shadowStyle = shadowStyle
+                )
             }
         },
         confirmButton = {

@@ -20,6 +20,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,17 +32,17 @@ fun NavigationDrawer(
     onDismiss: () -> Unit,
     playerCount: Int,
     numRounds: Int,
-    activeGamesCount: Int, // NEU: Anzahl der aktiven Spiele
+    activeGamesCount: Int,
     hapticEnabled: Boolean,
     fullScreenEnabled: Boolean,
     isTurnierMode: Boolean,
     onAddPlayerClick: () -> Unit,
     onShowResultsClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onActiveGamesClick: () -> Unit, // NEU: Klick auf aktive Spiele
+    onActiveGamesClick: () -> Unit,
     onTournamentClick: () -> Unit,
     onNextRoundClick: () -> Unit,
-    onNewGameClick: () -> Unit, // Umbenannt von onRestartClick
+    onNewGameClick: () -> Unit,
     onEndGameClick: () -> Unit,
     onTurnierModeToggle: (Boolean) -> Unit,
     onShowSettings: () -> Unit
@@ -51,6 +52,13 @@ fun NavigationDrawer(
     val sound = LocalSoundFeedback.current
     var devClickCount by remember { mutableIntStateOf(0) }
     var lastClickTime by remember { mutableLongStateOf(0L) }
+    
+    // Referenz auf den aktuellen Toast, um ihn abbrechen zu können
+    var currentToast by remember { mutableStateOf<Toast?>(null) }
+    
+    // Texte für das Easter Egg
+    val easterEggStepsText = stringResource(R.string.tournament_easter_egg_steps)
+    val easterEggActivatedText = stringResource(R.string.tournament_easter_egg_activated)
 
     val shadowStyle = TextStyle(
         fontFamily = CalibriFontFamily,
@@ -108,9 +116,8 @@ fun NavigationDrawer(
                                 modifier = Modifier.size(40.adaptiveDp())
                             )
                             Spacer(Modifier.width(12.adaptiveDp()))
-                            @Suppress("SpellCheckingInspection")
                             Text(
-                                text = "BGSC \"Gut Schlag\"\nGladbeck e.V.",
+                                text = stringResource(R.string.drawer_club_name),
                                 color = Color.Black,
                                 fontSize = 18.adaptiveSp(),
                                 lineHeight = 20.adaptiveSp(),
@@ -127,7 +134,7 @@ fun NavigationDrawer(
                         // Menu Items
                         SideMenuItem(
                             icon = Icons.Default.Add,
-                            text = "Spieler hinzufügen",
+                            text = stringResource(R.string.menu_add_player),
                             onClick = { if (playerCount < 10) onAddPlayerClick() },
                             contentColor = Color.Black
                         )
@@ -135,7 +142,7 @@ fun NavigationDrawer(
                         if (numRounds < 4) {
                             SideMenuItem(
                                 icon = Icons.Default.AddCircleOutline,
-                                text = "Nächste Runde",
+                                text = stringResource(R.string.menu_next_round),
                                 onClick = {
                                     if (hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onNextRoundClick()
@@ -144,8 +151,8 @@ fun NavigationDrawer(
                             )
                         }
                         SideMenuItem(
-                            icon = Icons.Default.AddCircle, // Geändert von Refresh auf AddCircle für "Neues Spiel"
-                            text = "Neues Spiel", // Umbenannt von "Neu starten"
+                            icon = Icons.Default.AddCircle,
+                            text = stringResource(R.string.menu_new_game),
                             onClick = {
                                 if (hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onNewGameClick()
@@ -154,7 +161,7 @@ fun NavigationDrawer(
                         )
                         SideMenuItem(
                             icon = Icons.Default.Stop,
-                            text = "Spiel beenden",
+                            text = stringResource(R.string.menu_end_game),
                             onClick = {
                                 if (hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onEndGameClick()
@@ -167,7 +174,7 @@ fun NavigationDrawer(
                         if (isTurnierMode) {
                             SideMenuItem(
                                 icon = Icons.Default.MilitaryTech,
-                                text = "Turnier-Modus",
+                                text = stringResource(R.string.menu_tournament_mode),
                                 onClick = onTournamentClick,
                                 contentColor = Color(0xFFD4AF37)
                             )
@@ -175,15 +182,14 @@ fun NavigationDrawer(
                         
                         SideMenuItem(
                             icon = Icons.Default.EmojiEvents,
-                            text = "Ergebniskarte",
+                            text = stringResource(R.string.menu_results_card),
                             onClick = onShowResultsClick,
                             contentColor = Color.Black
                         )
                         
-                        // Aktive Spiele jetzt direkt über Beendete Spiele
                         SideMenuItem(
                             icon = Icons.Default.PlayCircleOutline,
-                            text = "Aktive Spiele",
+                            text = stringResource(R.string.menu_active_games),
                             badge = if (activeGamesCount > 0) activeGamesCount.toString() else null,
                             onClick = onActiveGamesClick,
                             contentColor = Color.Black
@@ -191,7 +197,7 @@ fun NavigationDrawer(
 
                         SideMenuItem(
                             icon = Icons.Default.History,
-                            text = "Beendete Spiele",
+                            text = stringResource(R.string.menu_finished_games),
                             onClick = onHistoryClick,
                             contentColor = Color.Black
                         )
@@ -227,7 +233,7 @@ fun NavigationDrawer(
                                     )
                                     Icon(
                                         Icons.Default.Settings,
-                                        contentDescription = "Einstellungen",
+                                        contentDescription = stringResource(R.string.settings_icon_desc),
                                         tint = Color.Black,
                                         modifier = Modifier.size(26.adaptiveDp())
                                     )
@@ -245,22 +251,30 @@ fun NavigationDrawer(
                                         val currentTime = System.currentTimeMillis()
                                         if (currentTime - lastClickTime > 1000) { devClickCount = 1 } else { devClickCount++ }
                                         lastClickTime = currentTime
+                                        
                                         if (devClickCount >= 7) {
                                             onTurnierModeToggle(true)
-                                            Toast.makeText(context, "Turnier-Modus aktiviert!", Toast.LENGTH_SHORT).show()
+                                            currentToast?.cancel()
+                                            currentToast = Toast.makeText(context, easterEggActivatedText, Toast.LENGTH_SHORT)
+                                            currentToast?.show()
                                             devClickCount = 0
+                                        } else if (devClickCount >= 3) {
+                                            val remaining = 7 - devClickCount
+                                            currentToast?.cancel()
+                                            currentToast = Toast.makeText(context, easterEggStepsText.format(remaining), Toast.LENGTH_SHORT)
+                                            currentToast?.show()
                                         }
                                     },
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "© BGSC \"Gut Schlag\" Gladbeck e.V.",
+                                    text = stringResource(R.string.drawer_copyright),
                                     color = Color.Black.copy(alpha = 0.4f),
                                     fontSize = 10.adaptiveSp(),
                                     fontFamily = CalibriFontFamily
                                 )
                                 Text(
-                                    text = "Created by Patrick",
+                                    text = stringResource(R.string.drawer_credits),
                                     color = Color.Black.copy(alpha = 0.4f),
                                     fontSize = 10.adaptiveSp(),
                                     fontFamily = CalibriFontFamily
