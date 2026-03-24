@@ -41,7 +41,7 @@ fun NavigationDrawer(
     onActiveGamesClick: () -> Unit, // NEU: Klick auf aktive Spiele
     onTournamentClick: () -> Unit,
     onNextRoundClick: () -> Unit,
-    onRestartClick: () -> Unit,
+    onNewGameClick: () -> Unit, // Umbenannt von onRestartClick
     onEndGameClick: () -> Unit,
     onTurnierModeToggle: (Boolean) -> Unit,
     onShowSettings: () -> Unit
@@ -131,15 +131,6 @@ fun NavigationDrawer(
                             onClick = { if (playerCount < 10) onAddPlayerClick() },
                             contentColor = Color.Black
                         )
-                        
-                        // NEU: Aktive Spiele mit Badge
-                        SideMenuItem(
-                            icon = Icons.Default.PlayCircleOutline,
-                            text = "Aktive Spiele",
-                            badge = if (activeGamesCount > 0) activeGamesCount.toString() else null,
-                            onClick = onActiveGamesClick,
-                            contentColor = Color.Black
-                        )
 
                         if (numRounds < 4) {
                             SideMenuItem(
@@ -153,11 +144,11 @@ fun NavigationDrawer(
                             )
                         }
                         SideMenuItem(
-                            icon = Icons.Default.Refresh,
-                            text = "Neu starten",
+                            icon = Icons.Default.AddCircle, // Geändert von Refresh auf AddCircle für "Neues Spiel"
+                            text = "Neues Spiel", // Umbenannt von "Neu starten"
                             onClick = {
                                 if (hapticEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onRestartClick()
+                                onNewGameClick()
                             },
                             contentColor = Color.Black
                         )
@@ -188,9 +179,19 @@ fun NavigationDrawer(
                             onClick = onShowResultsClick,
                             contentColor = Color.Black
                         )
+                        
+                        // Aktive Spiele jetzt direkt über Beendete Spiele
+                        SideMenuItem(
+                            icon = Icons.Default.PlayCircleOutline,
+                            text = "Aktive Spiele",
+                            badge = if (activeGamesCount > 0) activeGamesCount.toString() else null,
+                            onClick = onActiveGamesClick,
+                            contentColor = Color.Black
+                        )
+
                         SideMenuItem(
                             icon = Icons.Default.History,
-                            text = "Historie",
+                            text = "Beendete Spiele",
                             onClick = onHistoryClick,
                             contentColor = Color.Black
                         )

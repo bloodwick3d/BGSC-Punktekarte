@@ -329,7 +329,7 @@ fun WinnerCard(
     canAddRound: Boolean = true,
     onShare: () -> Unit = {},
     onNextRound: () -> Unit = {},
-    onRestart: () -> Unit = {},
+    onNewGame: () -> Unit = {}, // Umbenannt von onRestart
     onResetAll: () -> Unit = {},
     onDismiss: () -> Unit = {},
     onGloballyPositioned: (LayoutCoordinates) -> Unit = {}
@@ -455,7 +455,7 @@ fun WinnerCard(
                                 }
                             }
                             Button(
-                                onClick = golfClick { onRestart() }, 
+                                onClick = golfClick { onNewGame() }, 
                                 modifier = Modifier.weight(1f), 
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), 
                                 contentPadding = PaddingValues(horizontal = 4.adaptiveDp()),
@@ -463,10 +463,10 @@ fun WinnerCard(
                                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
                                 ) { 
                                     Box(contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Refresh, null, tint = Color.Black.copy(alpha = 0.3f), modifier = Modifier.offset(1.dp, 1.dp))
-                                        Icon(Icons.Default.Refresh, null)
+                                        Icon(Icons.Default.AddCircle, null, tint = Color.Black.copy(alpha = 0.3f), modifier = Modifier.offset(1.dp, 1.dp))
+                                        Icon(Icons.Default.AddCircle, null)
                                     }
-                                    Spacer(Modifier.width(4.adaptiveDp())); Text("Neu starten", fontSize = 12.adaptiveSp(), style = shadowStyle) 
+                                    Spacer(Modifier.width(4.adaptiveDp())); Text("Neues Spiel", fontSize = 12.adaptiveSp(), style = shadowStyle)
                                 }
                         }
                         Spacer(Modifier.height(12.adaptiveDp()))

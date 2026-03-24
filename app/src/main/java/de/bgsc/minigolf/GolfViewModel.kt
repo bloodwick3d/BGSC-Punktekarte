@@ -507,6 +507,13 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun completeGame(game: GameResult) {
+        viewModelScope.launch {
+            val completedGame = game.copy(isCompleted = true)
+            dao.insert(completedGame)
+        }
+    }
+
     fun deleteHistoryEntry(id: Long) {
         viewModelScope.launch {
             dao.deleteById(id)
