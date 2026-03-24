@@ -16,7 +16,8 @@ data class GameResult(
     @SerializedName("system") val system: String,
     @SerializedName("location") val location: String = "",
     @SerializedName("playersJson") val playersJson: String,
-    @SerializedName("isFullGame") val isFullGame: Boolean = false 
+    @SerializedName("isFullGame") val isFullGame: Boolean = false,
+    @SerializedName("isCompleted") val isCompleted: Boolean = true // Standardmäßig true für Abwärtskompatibilität
 )
 
 @Keep

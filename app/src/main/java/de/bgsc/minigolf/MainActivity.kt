@@ -120,6 +120,8 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
     var showInfoDialog by remember { mutableStateOf(false) }
     var flyingScore by remember { mutableStateOf<FlyingScoreInfo?>(null) }
 
+    val activeGames by viewModel.activeGames.collectAsState()
+
     if (viewModel.currentScreen != Screen.Main || showSideMenu) {
         BackHandler { if (showSideMenu) showSideMenu = false else viewModel.onBackPressed() }
     }
@@ -231,7 +233,7 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
                             Dialog(onDismissRequest = { showWinnerDialog = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
                                 WinnerCard(
                                     allPlayers = players, selectedSystem = viewModel.selectedSystem, canAddRound = numRounds < 4,
-                                    onRestart = { viewModel.saveGame(); viewModel.restartGame(); showWinnerDialog = false },
+                                    onRestart = { viewModel.saveGame(true); viewModel.restartGame(); showWinnerDialog = false },
                                     onShare = { 
                                         val playerScores = players.map { p -> PlayerScore(p.name, p.color.toArgb(), p.roundScores.flatten().filterNotNull().sum(), p.roundScores.map { it.filterNotNull().sum() }, p.roundScores.map { it.all { s -> s != null } }, p.roundScores) }
                                         val bmp = generateBitmapFromData(context, playerScores, viewModel.selectedSystem, viewModel.currentLocation, System.currentTimeMillis())
@@ -239,7 +241,7 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
                                         showWinnerDialog = false 
                                     },
                                     onNextRound = { viewModel.addRound(); showWinnerDialog = false },
-                                    onResetAll = { viewModel.saveGame(); viewModel.resetAll(); showWinnerDialog = false },
+                                    onResetAll = { viewModel.saveGame(true); viewModel.resetAll(); showWinnerDialog = false },
                                     onDismiss = { showWinnerDialog = false })
                             }
                         }
@@ -280,16 +282,18 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
                             onDismiss = { showSideMenu = false }, 
                             playerCount = players.size, 
                             numRounds = numRounds, 
+                            activeGamesCount = activeGames.size,
                             hapticEnabled = viewModel.hapticEnabled, 
                             fullScreenEnabled = viewModel.fullScreenEnabled,
                             isTurnierMode = viewModel.isTurnierMode,
                             onAddPlayerClick = { showAddPlayerDialog = true; showSideMenu = false }, 
                             onShowResultsClick = { showWinnerDialog = true; showSideMenu = false }, 
                             onHistoryClick = { viewModel.currentScreen = Screen.History; showSideMenu = false }, 
+                            onActiveGamesClick = { viewModel.currentScreen = Screen.ActiveGames; showSideMenu = false },
                             onTournamentClick = { viewModel.currentScreen = Screen.TournamentSelection; showSideMenu = false }, 
                             onNextRoundClick = { viewModel.addRound(); showSideMenu = false }, 
-                            onRestartClick = { viewModel.saveGame(); viewModel.restartGame(); showSideMenu = false }, 
-                            onEndGameClick = { viewModel.saveGame(); viewModel.resetAll(); showSideMenu = false },
+                            onRestartClick = { viewModel.saveGame(true); viewModel.restartGame(); showSideMenu = false }, 
+                            onEndGameClick = { viewModel.saveGame(true); viewModel.resetAll(); showSideMenu = false },
                             onTurnierModeToggle = { viewModel.toggleTurnierMode(it) },
                             onShowSettings = { showSideMenu = false; showSettingsDialog = true }
                         )
@@ -299,6 +303,10 @@ fun MiniGolfApp(viewModel: GolfViewModel = viewModel()) {
 
                 AnimatedVisibility(visible = viewModel.currentScreen == Screen.History, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
                     HistoryScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, fullScreenEnabled = viewModel.fullScreenEnabled)
+                }
+
+                AnimatedVisibility(visible = viewModel.currentScreen == Screen.ActiveGames, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
+                    ActiveGamesScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, fullScreenEnabled = viewModel.fullScreenEnabled)
                 }
 
                 TournamentThemeWrapper(theme = viewModel.tournamentTheme) {

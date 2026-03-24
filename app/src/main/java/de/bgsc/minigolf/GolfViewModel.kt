@@ -49,6 +49,7 @@ enum class TournamentTheme {
 sealed class Screen {
     data object Main : Screen()
     data object History : Screen()
+    data object ActiveGames : Screen()
     data object TournamentSelection : Screen()
     data object TournamentTable : Screen()
     data object TournamentHistory : Screen()
@@ -67,7 +68,10 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("minigolf_prefs", Context.MODE_PRIVATE)
     private val updateManager = UpdateManager(application)
     
-    val gameHistory: StateFlow<List<GameResult>> = dao.getAllResults()
+    val gameHistory: StateFlow<List<GameResult>> = dao.getAllCompletedResults()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val activeGames: StateFlow<List<GameResult>> = dao.getAllActiveResults()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val tournamentHistory: StateFlow<List<TournamentNoteResult>> = tournamentNoteDao.getAllResults()
@@ -82,6 +86,10 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     var selectedSystem by mutableStateOf("Miniaturgolf\n(Eternit)")
     var currentLocation by mutableStateOf("")
     
+    // Tracking für das aktuell geladene Spiel
+    var currentGameId by mutableStateOf<Long?>(null)
+        private set
+
     // Settings
     var hapticEnabled by mutableStateOf(prefs.getBoolean("haptic_enabled", true))
     var keepScreenOn by mutableStateOf(prefs.getBoolean("keep_screen_on", false))
@@ -92,7 +100,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         TournamentTheme.entries.getOrElse(prefs.getInt("tournament_theme", TournamentTheme.SYSTEM.ordinal)) { TournamentTheme.SYSTEM }
     )
 
-    // App Info - Holt sich die Version sicher vom System, ohne BuildConfig zu benötigen
+    // App Info
     val appVersion: String = try {
         val pInfo = application.packageManager.getPackageInfo(application.packageName, 0)
         pInfo.versionName ?: "unknown"
@@ -160,6 +168,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun onBackPressed() {
         when (currentScreen) {
             Screen.History -> currentScreen = Screen.Main
+            Screen.ActiveGames -> currentScreen = Screen.Main
             Screen.TournamentSelection -> currentScreen = Screen.Main
             Screen.TournamentTable -> {
                 currentScreen = if (currentTournamentNoteId != null) Screen.TournamentHistory else Screen.TournamentSelection
@@ -315,7 +324,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
             val signature = ByteArray(2)
             val read = inputStream.read(signature)
             if (read != 2) return false
-            var head = (signature[0].toInt() and 0xff) or ((signature[1].toInt() and 0xff) shl 8)
+            val head = (signature[0].toInt() and 0xff) or ((signature[1].toInt() and 0xff) shl 8)
             head == GZIPInputStream.GZIP_MAGIC
         } catch (_: Exception) {
             false
@@ -368,6 +377,9 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         updatedRounds[roundIndex] = updatedScores
         updatedPlayers[playerIndex] = player.copy(roundScores = updatedRounds)
         players = updatedPlayers
+        
+        // Automatisches Zwischenspeichern bei jeder Punkteänderung
+        saveGame(isCompleted = false)
     }
 
     fun updateTournamentNote(index: Int, ball: String, startPoint: String, notes: String) {
@@ -423,18 +435,41 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
 
     fun restartGame() {
         players = players.map { it.copy(roundScores = listOf(List(18) { null })) }
+        currentGameId = null
     }
 
     fun resetAll() {
         players = listOf(Player("Spieler 1", Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f)))
         currentLocation = ""
+        currentGameId = null
         resetTournamentNotes()
     }
 
-    fun saveGame() {
+    fun loadActiveGame(result: GameResult) {
+        currentGameId = result.id
+        currentLocation = result.location
+        selectedSystem = result.system
+        
+        val playerScores = Converters().toPlayerScoreList(result.playersJson)
+        players = playerScores.map { ps ->
+            Player(
+                name = ps.name,
+                color = Color(ps.colorInt),
+                roundScores = ps.holeScores.ifEmpty { 
+                    // Fallback für alte Datenstrukturen
+                    ps.rounds.map { List(18) { null } } 
+                }
+            )
+        }
+        currentScreen = Screen.Main
+    }
+
+    fun saveGame(isCompleted: Boolean = true) {
         val currentPlayers = players
         val system = selectedSystem
         val location = currentLocation
+        val existingId = currentGameId
+        
         val isFullGame = currentPlayers.isNotEmpty() && currentPlayers.all { p ->
             p.roundScores.all { rs -> rs.all { it != null } }
         }
@@ -451,13 +486,24 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             val result = GameResult(
+                id = existingId ?: 0L,
                 date = System.currentTimeMillis(),
                 system = system,
                 location = location,
                 playersJson = Converters().fromPlayerScoreList(playerScores),
-                isFullGame = isFullGame
+                isFullGame = isFullGame,
+                isCompleted = isCompleted
             )
-            dao.insert(result)
+            val newId = dao.insert(result)
+            if (existingId == null) {
+                currentGameId = newId
+            }
+            
+            // Wenn das Spiel final abgeschlossen wurde, setzen wir die ID zurück
+            // für ein mögliches neues Spiel
+            if (isCompleted) {
+                currentGameId = null
+            }
         }
     }
 
