@@ -1,10 +1,13 @@
 package de.bgsc.minigolf
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -12,6 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -20,12 +25,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ActiveGamesScreen(
     viewModel: GolfViewModel,
@@ -33,6 +39,10 @@ fun ActiveGamesScreen(
     fullScreenEnabled: Boolean
 ) {
     val activeGames by viewModel.activeGames.collectAsStateWithLifecycle()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchExpanded by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
 
     val shadowStyle = TextStyle(
         fontFamily = CalibriFontFamily,
@@ -42,6 +52,29 @@ fun ActiveGamesScreen(
             blurRadius = 3f
         )
     )
+
+    val isImeVisible = WindowInsets.isImeVisible
+    LaunchedEffect(isImeVisible) {
+        if (!isImeVisible && searchQuery.isEmpty() && isSearchExpanded) {
+            isSearchExpanded = false
+        }
+    }
+
+    LaunchedEffect(isSearchExpanded) {
+        if (isSearchExpanded) focusRequester.requestFocus()
+    }
+
+    val filteredActiveGames = remember(activeGames, searchQuery) {
+        if (searchQuery.isBlank()) activeGames
+        else {
+            activeGames.filter { 
+                it.system.contains(searchQuery, ignoreCase = true) ||
+                it.location.contains(searchQuery, ignoreCase = true) ||
+                SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(it.date)).contains(searchQuery) ||
+                it.playersJson.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
 
     val itemToCompleteState = remember { mutableStateOf<GameResult?>(null) }
     val currentItemToComplete = itemToCompleteState.value
@@ -90,23 +123,89 @@ fun ActiveGamesScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
             Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background, shadowElevation = 4.dp) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.adaptiveDp()),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = golfClick { onBack() }) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.adaptiveDp()),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        if (!isSearchExpanded) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = golfClick { onBack() }) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                                    }
+                                }
+                                Spacer(Modifier.width(8.adaptiveDp()))
+                                Text("Aktive Spiele", fontSize = 20.adaptiveSp(), fontWeight = FontWeight.Bold, style = shadowStyle)
+                            }
+                            IconButton(onClick = golfClick { isSearchExpanded = true }) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
+                                    Icon(Icons.Default.Search, contentDescription = "Suchen")
+                                }
+                            }
+                        } else {
+                            IconButton(onClick = golfClick { isSearchExpanded = false; searchQuery = "" }) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Schließen")
+                                }
+                            }
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier.weight(1f).focusRequester(focusRequester),
+                                placeholder = { Text("Suchen...", fontFamily = CalibriFontFamily) },
+                                trailingIcon = {
+                                    IconButton(onClick = golfClick { if (searchQuery.isNotEmpty()) searchQuery = "" else isSearchExpanded = false }) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
+                                            Icon(Icons.Default.Close, contentDescription = "Suche beenden")
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                textStyle = shadowStyle,
+                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                                shape = RoundedCornerShape(12.adaptiveDp()),
+                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.Black, unfocusedBorderColor = Color.Gray)
+                            )
                         }
                     }
-                    Spacer(Modifier.width(8.adaptiveDp()))
-                    Text("Aktive Spiele", fontSize = 20.adaptiveSp(), fontWeight = FontWeight.Bold, style = shadowStyle)
+                    AnimatedVisibility(visible = isSearchExpanded && activeGames.isNotEmpty(), enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                        val suggestions = remember(activeGames, searchQuery) {
+                            val converters = Converters()
+                            val allLocations = activeGames.map { it.location }.filter { it.isNotBlank() }
+                            val allPlayers = activeGames.flatMap { 
+                                try { converters.toPlayerScoreList(it.playersJson).map { p -> p.name } } 
+                                catch (_: Exception) { emptyList() }
+                            }.filter { it.isNotBlank() }
+                            
+                            (allLocations + allPlayers)
+                                .distinct()
+                                .filter { it.contains(searchQuery, ignoreCase = true) && it.equals(searchQuery, ignoreCase = true).not() }
+                                .take(8)
+                        }
+
+                        if (suggestions.isNotEmpty()) {
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 12.adaptiveDp()),
+                                contentPadding = PaddingValues(horizontal = 16.adaptiveDp()),
+                                horizontalArrangement = Arrangement.spacedBy(8.adaptiveDp())
+                            ) {
+                                items(suggestions) { suggestion ->
+                                    GolfSuggestionChip(text = suggestion, onClick = { searchQuery = suggestion })
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            Box(modifier = Modifier.weight(1f)) {
-                if (activeGames.isEmpty()) {
+            Box(modifier = Modifier.weight(1f).imePadding()) {
+                if (filteredActiveGames.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(contentAlignment = Alignment.Center) {
@@ -114,7 +213,7 @@ fun ActiveGamesScreen(
                                 Icon(Icons.Default.PlayCircleOutline, contentDescription = null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(64.adaptiveDp()))
                             }
                             Spacer(Modifier.height(16.adaptiveDp()))
-                            Text("Keine aktiven Spiele gefunden", color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
+                            Text(if (searchQuery.isEmpty()) "Keine aktiven Spiele gefunden" else "Keine Ergebnisse", color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
                         }
                     }
                 } else {
@@ -123,7 +222,7 @@ fun ActiveGamesScreen(
                         contentPadding = PaddingValues(16.adaptiveDp()),
                         verticalArrangement = Arrangement.spacedBy(12.adaptiveDp())
                     ) {
-                        items(activeGames, key = { it.id }) { game ->
+                        items(filteredActiveGames, key = { it.id }) { game ->
                             SwipeableActiveGameItem(
                                 game = game,
                                 onCompleteRequest = { itemToCompleteState.value = game },
