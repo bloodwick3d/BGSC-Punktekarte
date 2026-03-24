@@ -102,21 +102,6 @@ class MainActivity : ComponentActivity() {
         } else {
             windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
         }
-        
-        setContent { 
-            val viewModel: GolfViewModel = viewModel()
-            val context = LocalContext.current
-            
-            CompositionLocalProvider(
-                LocalContext provides LanguageHelper.setLocale(context, viewModel.currentLanguage)
-            ) {
-                MiniGolfTheme { 
-                    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
-                        MiniGolfApp(viewModel) 
-                    } 
-                }
-            }
-        }
     }
 }
 
@@ -279,12 +264,12 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                 hapticEnabled = viewModel.hapticEnabled,
                                 soundEnabled = viewModel.soundEnabled,
                                 keepScreenOn = viewModel.keepScreenOn,
-                                currentLanguage = viewModel.currentLanguage,
+                                fullScreenEnabled = viewModel.fullScreenEnabled,
                                 shadowStyle = shadowStyle,
                                 onHapticToggle = { viewModel.toggleHaptic(it) },
                                 onSoundToggle = { viewModel.soundEnabled = it; viewModel.toggleSound(it) },
                                 onKeepScreenOnToggle = { viewModel.toggleKeepScreenOn(it) },
-                                onLanguageChange = { viewModel.setLanguage(it) },
+                                onFullScreenToggle = { viewModel.fullScreenEnabled = it; viewModel.toggleFullScreen(it) },
                                 onDismiss = { showSettingsDialog = false },
                                 onShowInfo = { showSettingsDialog = false; showInfoDialog = true }
                             )

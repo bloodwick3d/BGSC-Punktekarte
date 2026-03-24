@@ -12,6 +12,7 @@ interface TournamentNoteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(result: TournamentNoteResult): Long
 
+    @Suppress("unused")
     @Update
     suspend fun update(result: TournamentNoteResult)
 
@@ -21,6 +22,7 @@ interface TournamentNoteDao {
     @Query("DELETE FROM tournament_note_results WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Suppress("unused")
     @Query("DELETE FROM tournament_note_results")
     suspend fun deleteAll()
 }

@@ -220,7 +220,7 @@ fun generateBitmapFromData(
             addRoundRect(RectF(currentX, footerTop, currentX + stickyColumnWidth, tableBottom),
                 floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, cornerRadius, cornerRadius), Path.Direction.CW)
         }
-        drawPath(headerPathL, paint)
+        drawPath(footerPathL, paint)
         
         currentX += (stickyColumnWidth + playerGap)
 
@@ -332,7 +332,7 @@ fun generateBitmapFromData(
             addRoundRect(RectF(currentXRight, footerTop, currentXRight + stickyColumnWidth, tableBottom),
                 floatArrayOf(0f, 0f, 0f, 0f, cornerRadius, cornerRadius, 0f, 0f), Path.Direction.CW)
         }
-        drawPath(headerPathR, paint)
+        drawPath(footerPathR, paint)
     }
 
     return bitmap
