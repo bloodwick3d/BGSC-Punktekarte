@@ -3,6 +3,7 @@ package de.bgsc.minigolf
 import android.app.Activity
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -75,12 +76,17 @@ class MainActivity : ComponentActivity() {
             window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
         
+        // Edge-to-edge ermöglicht das Zeichnen hinter Systemleisten
         enableEdgeToEdge()
+        
         setContent { 
             val viewModel: GolfViewModel = viewModel()
+            
+            // Reagiert auf Änderungen des Vollbild-Status
             LaunchedEffect(viewModel.fullScreenEnabled) {
                 applySystemBarsVisibility(viewModel.fullScreenEnabled)
             }
+            
             MiniGolfTheme { 
                 Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
                     MiniGolfApp(viewModel) 
@@ -101,10 +107,33 @@ class MainActivity : ComponentActivity() {
     private fun applySystemBarsVisibility(fullScreen: Boolean) {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         if (fullScreen) {
-            windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+            // Vollbild-Modus (Immersiv)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+            } else {
+                @Suppress("DEPRECATION")
+                window.decorView.systemUiVisibility = (
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_FULLSCREEN
+                )
+            }
         } else {
-            windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+            // Normaler Modus (Leisten sichtbar)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+            } else {
+                @Suppress("DEPRECATION")
+                window.decorView.systemUiVisibility = (
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                )
+            }
         }
     }
 }
@@ -177,7 +206,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier), 
+                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier.displayCutoutPadding()),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             TopAppBar(
@@ -273,7 +302,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                 onHapticToggle = { viewModel.toggleHaptic(it) },
                                 onSoundToggle = { viewModel.toggleSound(it) },
                                 onKeepScreenOnToggle = { viewModel.toggleKeepScreenOn(it) },
-                                onFullScreenToggle = { viewModel.fullScreenEnabled = it },
+                                onFullScreenToggle = { viewModel.toggleFullScreen(it) },
                                 onDismiss = { showSettingsDialog = false },
                                 onShowInfo = { showSettingsDialog = false; showInfoDialog = true }
                             )

@@ -145,7 +145,7 @@ fun TournamentHistoryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())
+            .then(if (fullScreenEnabled) Modifier.displayCutoutPadding() else Modifier.systemBarsPadding())
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header Bereich
@@ -353,7 +353,7 @@ fun TournamentDetailsDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize().systemBarsPadding(),
+            modifier = Modifier.fillMaxSize().displayCutoutPadding(),
             color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.fillMaxSize()) {

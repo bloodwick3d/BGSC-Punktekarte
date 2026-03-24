@@ -116,7 +116,7 @@ fun HistoryScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).then(if (fullScreenEnabled) Modifier.displayCutoutPadding() else Modifier.systemBarsPadding())) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
             Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background, shadowElevation = 4.dp) {

@@ -58,7 +58,7 @@ fun TournamentScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .imePadding() // Weicht der Tastatur aus
-            .then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())
+            .then(if (fullScreenEnabled) Modifier.displayCutoutPadding() else Modifier.systemBarsPadding())
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header mit Save Button
