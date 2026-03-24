@@ -81,7 +81,11 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(viewModel.fullScreenEnabled) {
                 applySystemBarsVisibility(viewModel.fullScreenEnabled)
             }
-            MiniGolfTheme { Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { MiniGolfApp(viewModel) } } 
+            MiniGolfTheme { 
+                Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
+                    MiniGolfApp(viewModel) 
+                } 
+            } 
         }
     }
 
@@ -267,9 +271,9 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                 fullScreenEnabled = viewModel.fullScreenEnabled,
                                 shadowStyle = shadowStyle,
                                 onHapticToggle = { viewModel.toggleHaptic(it) },
-                                onSoundToggle = { viewModel.soundEnabled = it; viewModel.toggleSound(it) },
+                                onSoundToggle = { viewModel.toggleSound(it) },
                                 onKeepScreenOnToggle = { viewModel.toggleKeepScreenOn(it) },
-                                onFullScreenToggle = { viewModel.fullScreenEnabled = it; viewModel.toggleFullScreen(it) },
+                                onFullScreenToggle = { viewModel.fullScreenEnabled = it },
                                 onDismiss = { showSettingsDialog = false },
                                 onShowInfo = { showSettingsDialog = false; showInfoDialog = true }
                             )
