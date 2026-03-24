@@ -217,9 +217,6 @@ fun TournamentScreen(
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 }
-                
-                // Ein kleiner Spacer am Ende hilft, damit die letzte Zeile nicht direkt auf der Tastatur klebt
-                Spacer(modifier = Modifier.height(100.dp))
             }
         }
     }
