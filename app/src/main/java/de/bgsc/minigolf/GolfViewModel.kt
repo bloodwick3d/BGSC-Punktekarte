@@ -67,7 +67,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     private val tournamentNoteDao = database.tournamentNoteDao()
     private val prefs = application.getSharedPreferences("minigolf_prefs", Context.MODE_PRIVATE)
     private val updateManager = UpdateManager(application)
-    
+
     val gameHistory: StateFlow<List<GameResult>> = dao.getAllCompletedResults()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
