@@ -57,6 +57,7 @@ fun TournamentScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .imePadding() // Weicht der Tastatur aus
             .then(if (fullScreenEnabled) Modifier.statusBarsPadding() else Modifier.systemBarsPadding())
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -216,6 +217,9 @@ fun TournamentScreen(
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 }
+                
+                // Ein kleiner Spacer am Ende hilft, damit die letzte Zeile nicht direkt auf der Tastatur klebt
+                Spacer(modifier = Modifier.height(100.dp))
             }
         }
     }
