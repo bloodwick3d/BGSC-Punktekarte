@@ -252,7 +252,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                             Dialog(onDismissRequest = { showWinnerDialog = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
                                 WinnerCard(
                                     allPlayers = players, selectedSystem = viewModel.selectedSystem, canAddRound = numRounds < 4,
-                                    onRestart = { viewModel.saveGame(true); viewModel.restartGame(); showWinnerDialog = false },
+                                    onNewGame = { viewModel.saveGame(isCompleted = false); viewModel.restartGame(); showWinnerDialog = false },
                                     onShare = { 
                                         val playerScores = players.map { p -> PlayerScore(p.name, p.color.toArgb(), p.roundScores.flatten().filterNotNull().sum(), p.roundScores.map { it.filterNotNull().sum() }, p.roundScores.map { it.all { s -> s != null } }, p.roundScores) }
                                         val bmp = generateBitmapFromData(context, playerScores, viewModel.selectedSystem, viewModel.currentLocation, System.currentTimeMillis())
@@ -311,7 +311,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                             onActiveGamesClick = { viewModel.currentScreen = Screen.ActiveGames; showSideMenu = false },
                             onTournamentClick = { viewModel.currentScreen = Screen.TournamentSelection; showSideMenu = false }, 
                             onNextRoundClick = { viewModel.addRound(); showSideMenu = false }, 
-                            onRestartClick = { viewModel.saveGame(true); viewModel.restartGame(); showSideMenu = false }, 
+                            onNewGameClick = { viewModel.saveGame(isCompleted = false); viewModel.restartGame(); showSideMenu = false },
                             onEndGameClick = { viewModel.saveGame(true); viewModel.resetAll(); showSideMenu = false },
                             onTurnierModeToggle = { viewModel.toggleTurnierMode(it) },
                             onShowSettings = { showSideMenu = false; showSettingsDialog = true }

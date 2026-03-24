@@ -135,7 +135,7 @@ fun HistoryScreen(
                                     }
                                 }
                                 Spacer(Modifier.width(8.adaptiveDp()))
-                                Text("Spiel-Historie", fontSize = 20.adaptiveSp(), fontWeight = FontWeight.Bold, style = shadowStyle)
+                                Text("Beendete Spiele", fontSize = 20.adaptiveSp(), fontWeight = FontWeight.Bold, style = shadowStyle)
                             }
                             IconButton(onClick = golfClick { isSearchExpanded = true }) {
                                 Box(contentAlignment = Alignment.Center) {
