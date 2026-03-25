@@ -101,14 +101,27 @@ class MainActivity : ComponentActivity() {
                     Box(modifier = Modifier.fillMaxSize()) {
                         MiniGolfApp(viewModel)
                         
-                        // Adaptiver Status Bar Scrim (1:1 wie Navigation Bar)
                         if (!viewModel.fullScreenEnabled) {
+                            val scrimAlpha = if (isDarkTheme) 0.4f else 0.6f
+                            val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = scrimAlpha) else Color.White.copy(alpha = scrimAlpha)
+                            
+                            // Status Bar Scrim (Oben)
                             Spacer(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .windowInsetsTopHeight(WindowInsets.statusBars)
-                                    .background(if (isDarkTheme) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.4f))
+                                    .background(scrimColor)
                                     .align(Alignment.TopCenter)
+                                    .zIndex(10000f)
+                            )
+                            
+                            // Navigation Bar Scrim (Unten)
+                            Spacer(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .windowInsetsBottomHeight(WindowInsets.navigationBars)
+                                    .background(scrimColor)
+                                    .align(Alignment.BottomCenter)
                                     .zIndex(10000f)
                             )
                         }
