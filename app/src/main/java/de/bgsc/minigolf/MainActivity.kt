@@ -75,6 +75,13 @@ class MainActivity : ComponentActivity() {
         
         // Initialer Mode
         updateLayoutInDisplayCutoutMode(true)
+
+        // Deaktiviert den automatischen System-Schleier (Scrim) für echte Transparenz ab Android 10
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+            @Suppress("DEPRECATION")
+            window.isStatusBarContrastEnforced = false
+        }
         
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
