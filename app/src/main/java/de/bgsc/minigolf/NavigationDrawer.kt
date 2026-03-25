@@ -102,7 +102,7 @@ fun NavigationDrawer(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .then(if (fullScreenEnabled) Modifier.displayCutoutPadding() else Modifier.systemBarsPadding())
+                            .then(if (!fullScreenEnabled) Modifier.systemBarsPadding() else Modifier)
                             .padding(top = 20.adaptiveDp())
                     ) {
                         // Header

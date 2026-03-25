@@ -145,7 +145,7 @@ fun TournamentHistoryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .then(if (fullScreenEnabled) Modifier.displayCutoutPadding() else Modifier.systemBarsPadding())
+            .then(if (!fullScreenEnabled) Modifier.systemBarsPadding() else Modifier)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header Bereich
@@ -330,7 +330,8 @@ fun TournamentHistoryScreen(
         TournamentDetailsDialog(
             result = result,
             shadowStyle = shadowStyle,
-            onDismiss = { selectedResultForDetailsState.value = null }
+            onDismiss = { selectedResultForDetailsState.value = null },
+            fullScreenEnabled = fullScreenEnabled
         )
     }
 }
@@ -339,7 +340,8 @@ fun TournamentHistoryScreen(
 fun TournamentDetailsDialog(
     result: TournamentNoteResult,
     shadowStyle: TextStyle,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    fullScreenEnabled: Boolean
 ) {
     val notes = remember(result.notesJson) { 
         val listType = object : TypeToken<List<HoleNote>>() {}.type
@@ -353,7 +355,7 @@ fun TournamentDetailsDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize().displayCutoutPadding(),
+            modifier = Modifier.fillMaxSize().then(if (!fullScreenEnabled) Modifier.systemBarsPadding() else Modifier),
             color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.fillMaxSize()) {

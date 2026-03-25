@@ -118,7 +118,7 @@ fun ActiveGamesScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .then(if (fullScreenEnabled) Modifier.displayCutoutPadding() else Modifier.systemBarsPadding())
+            .then(if (!fullScreenEnabled) Modifier.systemBarsPadding() else Modifier)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
