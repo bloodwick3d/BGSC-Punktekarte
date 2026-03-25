@@ -17,6 +17,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -88,13 +89,30 @@ class MainActivity : ComponentActivity() {
         
         setContent { 
             val viewModel: GolfViewModel = viewModel()
-            LaunchedEffect(viewModel.fullScreenEnabled) {
+            val isDarkTheme = isSystemInDarkTheme()
+            
+            LaunchedEffect(viewModel.fullScreenEnabled, isDarkTheme) {
                 updateLayoutInDisplayCutoutMode(viewModel.fullScreenEnabled)
                 applySystemBarsVisibility(viewModel.fullScreenEnabled)
             }
+            
             MiniGolfTheme { 
                 Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
-                    MiniGolfApp(viewModel) 
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        MiniGolfApp(viewModel)
+                        
+                        // Adaptiver Status Bar Scrim (1:1 wie Navigation Bar)
+                        if (!viewModel.fullScreenEnabled) {
+                            Spacer(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .windowInsetsTopHeight(WindowInsets.statusBars)
+                                    .background(if (isDarkTheme) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.4f))
+                                    .align(Alignment.TopCenter)
+                                    .zIndex(10000f)
+                            )
+                        }
+                    }
                 } 
             } 
         }
@@ -124,10 +142,15 @@ class MainActivity : ComponentActivity() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         
+        val isDarkTheme = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+
         if (fullScreen) {
             windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
         } else {
             windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+            // Symbole adaptiv färben: Dunkle Symbole im hellen Design und umgekehrt
+            windowInsetsController.isAppearanceLightStatusBars = !isDarkTheme
+            windowInsetsController.isAppearanceLightNavigationBars = !isDarkTheme
         }
     }
 }
