@@ -72,26 +72,32 @@ class MainActivity : ComponentActivity() {
         
         window.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
         
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-        }
+        // Initialer Mode
+        updateLayoutInDisplayCutoutMode(true)
         
-        // Edge-to-edge ermöglicht das Zeichnen hinter Systemleisten
         enableEdgeToEdge()
-        
         setContent { 
             val viewModel: GolfViewModel = viewModel()
-            
-            // Reagiert auf Änderungen des Vollbild-Status
             LaunchedEffect(viewModel.fullScreenEnabled) {
+                updateLayoutInDisplayCutoutMode(viewModel.fullScreenEnabled)
                 applySystemBarsVisibility(viewModel.fullScreenEnabled)
             }
-            
             MiniGolfTheme { 
                 Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
                     MiniGolfApp(viewModel) 
                 } 
             } 
+        }
+    }
+
+    private fun updateLayoutInDisplayCutoutMode(fullScreen: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val layoutMode = if (fullScreen) {
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            } else {
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+            }
+            window.attributes.layoutInDisplayCutoutMode = layoutMode
         }
     }
 
@@ -107,7 +113,6 @@ class MainActivity : ComponentActivity() {
     private fun applySystemBarsVisibility(fullScreen: Boolean) {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         if (fullScreen) {
-            // Vollbild-Modus (Immersiv)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
@@ -123,7 +128,6 @@ class MainActivity : ComponentActivity() {
                 )
             }
         } else {
-            // Normaler Modus (Leisten sichtbar)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
             } else {
@@ -206,7 +210,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier.displayCutoutPadding()),
+                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             TopAppBar(
