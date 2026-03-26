@@ -51,8 +51,9 @@ fun EditPlayerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Spieler bearbeiten", color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
-        containerColor = Color.White.copy(alpha = 0.4f),
-        tonalElevation = 0.dp,
+        containerColor = Color.White,
+        tonalElevation = 6.dp,
+        shape = RoundedCornerShape(24.dp),
         text = {
             val tfColors = TextFieldDefaults.colors(
                 focusedContainerColor = editColor,
@@ -74,7 +75,7 @@ fun EditPlayerDialog(
                     colors = tfColors,
                     textStyle = shadowStyle.copy(color = Color.White, fontWeight = FontWeight.Bold),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 HueSlider(hue = editHue, onHueChange = { editHue = it })
@@ -142,8 +143,9 @@ fun AddPlayerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Spieler hinzufügen", color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
-        containerColor = Color.White.copy(alpha = 0.4f),
-        tonalElevation = 0.dp,
+        containerColor = Color.White,
+        tonalElevation = 6.dp,
+        shape = RoundedCornerShape(24.dp),
         text = {
             val tfColors = TextFieldDefaults.colors(
                 focusedContainerColor = addColor,
@@ -165,7 +167,7 @@ fun AddPlayerDialog(
                     colors = tfColors,
                     textStyle = shadowStyle.copy(color = Color.White, fontWeight = FontWeight.Bold),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 HueSlider(hue = addHue, onHueChange = { editHue -> addHue = editHue })

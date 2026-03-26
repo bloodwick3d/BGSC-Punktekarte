@@ -1,9 +1,12 @@
 package de.bgsc.minigolf
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -20,6 +23,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -60,6 +64,8 @@ import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
+    private lateinit var golfViewModel: GolfViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -73,16 +79,8 @@ class MainActivity : ComponentActivity() {
         
         window.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
         
-        // Initialer Mode
         updateLayoutInDisplayCutoutMode(true)
 
-        // Deaktiviert den automatischen System-Schleier (Scrim) für echte Transparenz ab Android 10
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.isNavigationBarContrastEnforced = false
-            @Suppress("DEPRECATION")
-            window.isStatusBarContrastEnforced = false
-        }
-        
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
                 android.graphics.Color.TRANSPARENT,
@@ -93,26 +91,91 @@ class MainActivity : ComponentActivity() {
                 android.graphics.Color.TRANSPARENT
             )
         )
-        
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+            @Suppress("DEPRECATION")
+            window.isStatusBarContrastEnforced = false
+        }
+
         setContent { 
-            val viewModel: GolfViewModel = viewModel()
+            golfViewModel = viewModel()
             val isDarkTheme = isSystemInDarkTheme()
             
-            LaunchedEffect(viewModel.fullScreenEnabled, isDarkTheme) {
-                updateLayoutInDisplayCutoutMode(viewModel.fullScreenEnabled)
-                applySystemBarsVisibility(viewModel.fullScreenEnabled)
+            var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+
+            val shadowStyle = remember { 
+                TextStyle(
+                    fontFamily = CalibriFontFamily,
+                    shadow = Shadow(color = Color.Black.copy(alpha = 0.5f), offset = Offset(2f, 2f), blurRadius = 3f)
+                ) 
+            }
+
+            LaunchedEffect(golfViewModel.fullScreenEnabled, isDarkTheme) {
+                updateLayoutInDisplayCutoutMode(golfViewModel.fullScreenEnabled)
+                applySystemBarsVisibility(golfViewModel.fullScreenEnabled)
+            }
+
+            LaunchedEffect(Unit) {
+                if (intent?.data != null) {
+                    pendingImportUri = intent.data
+                    intent.data = null // Verhindert Re-Import beim Drehen
+                }
             }
             
             MiniGolfTheme { 
                 Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        MiniGolfApp(viewModel)
-                        
-                        if (!viewModel.fullScreenEnabled) {
+                        MiniGolfApp(golfViewModel)
+
+                        // Import-Bestätigungs-Dialog
+                        pendingImportUri?.let { uri ->
+                            val buttonShape = RoundedCornerShape(20.dp)
+                            AlertDialog(
+                                onDismissRequest = { pendingImportUri = null },
+                                title = { Text("Notizen importieren?", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
+                                text = { Text("Möchtest du die Turniernotizen aus der gewählten Datei importieren?", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
+                                confirmButton = {
+                                    Button(
+                                        onClick = golfClick {
+                                            golfViewModel.importTournamentNotes(this@MainActivity, uri) { success, count ->
+                                                if (success) {
+                                                    Toast.makeText(this@MainActivity, "$count Notizen importiert!", Toast.LENGTH_SHORT).show()
+                                                    golfViewModel.currentScreen = Screen.TournamentHistory
+                                                } else {
+                                                    Toast.makeText(this@MainActivity, "Import fehlgeschlagen.", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                            pendingImportUri = null
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                        shape = buttonShape,
+                                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
+                                    ) {
+                                        Text("Importieren", color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
+                                    }
+                                },
+                                dismissButton = {
+                                    Button(
+                                        onClick = golfClick { pendingImportUri = null },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                        shape = buttonShape,
+                                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
+                                    ) {
+                                        Text("Abbrechen", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
+                                    }
+                                },
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                textContentColor = MaterialTheme.colorScheme.onSurface,
+                                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                        }
+
+                        if (!golfViewModel.fullScreenEnabled) {
                             val scrimAlpha = if (isDarkTheme) 0.4f else 0.6f
                             val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = scrimAlpha) else Color.White.copy(alpha = scrimAlpha)
-                            
-                            // Status Bar Scrim (Oben)
+
                             Spacer(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -121,8 +184,7 @@ class MainActivity : ComponentActivity() {
                                     .align(Alignment.TopCenter)
                                     .zIndex(10000f)
                             )
-                            
-                            // Navigation Bar Scrim (Unten)
+
                             Spacer(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -135,6 +197,23 @@ class MainActivity : ComponentActivity() {
                     }
                 } 
             } 
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val uri = intent.data
+        if (uri != null) {
+            golfViewModel.importTournamentNotes(this, uri) { success, count ->
+                if (success) {
+                    Toast.makeText(this, "$count Notizen importiert!", Toast.LENGTH_SHORT).show()
+                    golfViewModel.currentScreen = Screen.TournamentHistory
+                } else {
+                    Toast.makeText(this, "Import fehlgeschlagen.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            intent.data = null
         }
     }
 
@@ -168,7 +247,6 @@ class MainActivity : ComponentActivity() {
             windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
         } else {
             windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
-            // Symbole adaptiv färben: Dunkle Symbole im hellen Design und umgekehrt
             windowInsetsController.isAppearanceLightStatusBars = !isDarkTheme
             windowInsetsController.isAppearanceLightNavigationBars = !isDarkTheme
         }
@@ -308,11 +386,11 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                 WinnerCard(
                                     allPlayers = players, selectedSystem = viewModel.selectedSystem, canAddRound = numRounds < 4,
                                     onNewGame = { viewModel.saveGame(isCompleted = false); viewModel.restartGame(); showWinnerDialog = false },
-                                    onShare = { 
+                                    onShare = {
                                         val playerScores = players.map { p -> PlayerScore(p.name, p.color.toArgb(), p.roundScores.flatten().filterNotNull().sum(), p.roundScores.map { it.filterNotNull().sum() }, p.roundScores.map { it.all { s -> s != null } }, p.roundScores) }
                                         val bmp = generateBitmapFromData(context, playerScores, viewModel.selectedSystem, viewModel.currentLocation, System.currentTimeMillis())
                                         shareBitmap(context, bmp)
-                                        showWinnerDialog = false 
+                                        showWinnerDialog = false
                                     },
                                     onNextRound = { viewModel.addRound(); showWinnerDialog = false },
                                     onResetAll = { viewModel.saveGame(true); viewModel.resetAll(); showWinnerDialog = false },
@@ -347,25 +425,25 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                         if (showInfoDialog) {
                             AppInfoDialog(
                                 appVersion = viewModel.appVersion,
-                                shadowStyle = shadowStyle, 
+                                shadowStyle = shadowStyle,
                                 onDismiss = { showInfoDialog = false }
                             )
                         }
                         NavigationDrawer(
-                            showSideMenu = showSideMenu, 
-                            onDismiss = { showSideMenu = false }, 
-                            playerCount = players.size, 
-                            numRounds = numRounds, 
+                            showSideMenu = showSideMenu,
+                            onDismiss = { showSideMenu = false },
+                            playerCount = players.size,
+                            numRounds = numRounds,
                             activeGamesCount = activeGames.size,
-                            hapticEnabled = viewModel.hapticEnabled, 
+                            hapticEnabled = viewModel.hapticEnabled,
                             fullScreenEnabled = viewModel.fullScreenEnabled,
                             isTurnierMode = viewModel.isTurnierMode,
-                            onAddPlayerClick = { showAddPlayerDialog = true; showSideMenu = false }, 
-                            onShowResultsClick = { showWinnerDialog = true; showSideMenu = false }, 
-                            onHistoryClick = { viewModel.currentScreen = Screen.History; showSideMenu = false }, 
+                            onAddPlayerClick = { showAddPlayerDialog = true; showSideMenu = false },
+                            onShowResultsClick = { showWinnerDialog = true; showSideMenu = false },
+                            onHistoryClick = { viewModel.currentScreen = Screen.History; showSideMenu = false },
                             onActiveGamesClick = { viewModel.currentScreen = Screen.ActiveGames; showSideMenu = false },
-                            onTournamentClick = { viewModel.currentScreen = Screen.TournamentSelection; showSideMenu = false }, 
-                            onNextRoundClick = { viewModel.addRound(); showSideMenu = false }, 
+                            onTournamentClick = { viewModel.currentScreen = Screen.TournamentSelection; showSideMenu = false },
+                            onNextRoundClick = { viewModel.addRound(); showSideMenu = false },
                             onNewGameClick = { viewModel.saveGame(isCompleted = false); viewModel.restartGame(); showSideMenu = false },
                             onEndGameClick = { viewModel.saveGame(true); viewModel.resetAll(); showSideMenu = false },
                             onTurnierModeToggle = { viewModel.toggleTurnierMode(it) },

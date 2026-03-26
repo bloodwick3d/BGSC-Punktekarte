@@ -5,10 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Base64
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import androidx.compose.ui.graphics.Color
+import com.google.gson.Gson
+import java.util.zip.GZIPOutputStream
 
 fun getScoreColor(total: Int, system: String, defaultColor: Color, rounds: Int = 1): Color {
     return when {
@@ -72,4 +75,73 @@ fun shareBitmap(context: Context, bitmap: Bitmap) {
     }
     
     context.startActivity(Intent.createChooser(shareIntent, "Ergebnis teilen"))
+}
+
+/**
+ * Exportiert eine einzelne Turniernotiz als .bgsc Datei und teilt sie.
+ * Jetzt inklusive eingebetteter Bilddaten.
+ */
+fun shareTournamentNote(context: Context, result: TournamentNoteResult) {
+    try {
+        val converters = TournamentConverters()
+        val holeNotes = converters.toHoleNoteList(result.notesJson)
+        
+        // Bilder in Base64 umwandeln und in die JSON-Struktur einbetten
+        val holeNotesWithImages = holeNotes.map { holeNote ->
+            val imagesWithData = holeNote.getAllImages().map { holeImage ->
+                val imageFile = File(holeImage.imagePath)
+                if (imageFile.exists()) {
+                    val bytes = imageFile.readBytes()
+                    val base64Data = Base64.encodeToString(bytes, Base64.DEFAULT)
+                    holeImage.copy(imageData = base64Data)
+                } else {
+                    holeImage
+                }
+            }
+            holeNote.copy(images = imagesWithData)
+        }
+        
+        val updatedResult = result.copy(notesJson = converters.fromHoleNoteList(holeNotesWithImages))
+        val wrapper = TournamentExportWrapper(notes = listOf(updatedResult))
+        val json = Gson().toJson(wrapper)
+
+        val cachePath = File(context.cacheDir, "exports")
+        if (!cachePath.exists()) cachePath.mkdirs()
+
+        // Bereinigung des Dateinamens: Alle Sonderzeichen und Punkte durch Unterstriche ersetzen
+        val safeLocation = result.location.ifBlank { "Export" }
+            .replace(Regex("[^a-zA-Z0-9]"), "_")
+            .replace(Regex("_+"), "_")
+            .trim('_')
+            
+        val safeSystem = result.system
+            .replace(Regex("[^a-zA-Z0-9]"), "_")
+            .replace(Regex("_+"), "_")
+            .trim('_')
+
+        val fileName = "${safeLocation}_${safeSystem}.bgsc"
+
+        val file = File(cachePath, fileName)
+        FileOutputStream(file).use { fos ->
+            GZIPOutputStream(fos).use { gzip ->
+                gzip.write(json.toByteArray(Charsets.UTF_8))
+            }
+        }
+
+        val authority = "${context.packageName}.fileprovider"
+        val contentUri: Uri = FileProvider.getUriForFile(context, authority, file)
+
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_STREAM, contentUri)
+            // Wir nutzen application/octet-stream für maximale Kompatibilität mit WhatsApp
+            type = "application/octet-stream"
+            clipData = ClipData.newRawUri(fileName, contentUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        context.startActivity(Intent.createChooser(shareIntent, "Turniernotiz teilen"))
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
 }

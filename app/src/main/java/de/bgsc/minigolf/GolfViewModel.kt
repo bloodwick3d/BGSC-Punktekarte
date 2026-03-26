@@ -3,6 +3,7 @@ package de.bgsc.minigolf
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -24,16 +25,39 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import kotlin.random.Random
 
+data class HoleImage(
+    @SerializedName("imagePath") val imagePath: String,
+    @SerializedName("originalImagePath") val originalImagePath: String,
+    @SerializedName("imageData") var imageData: String? = null // Base64 kodierte Bilddaten für Export/Import
+)
+
 data class HoleNote(
     @SerializedName("ball") val ball: String = "",
     @SerializedName("startPoint") val startPoint: String = "",
-    @SerializedName("notes") val notes: String = ""
-)
+    @SerializedName("notes") val notes: String = "",
+    @SerializedName("images") val images: List<HoleImage> = emptyList(),
+    // Veraltete Felder für Migration (werden automatisch in 'images' überführt)
+    @SerializedName("imagePath") val legacyImagePath: String? = null,
+    @SerializedName("originalImagePath") val legacyOriginalImagePath: String? = null
+) {
+    /**
+     * Gibt alle Bilder zurück, inkl. migrierter Bilder aus alten Versionen.
+     */
+    fun getAllImages(): List<HoleImage> {
+        val result = images.toMutableList()
+        if (legacyImagePath != null && legacyOriginalImagePath != null) {
+            val legacy = HoleImage(legacyImagePath, legacyOriginalImagePath)
+            if (!result.contains(legacy)) result.add(0, legacy)
+        }
+        return result
+    }
+}
 
 data class TournamentExportWrapper(
     @SerializedName("version") val version: Int = 1,
@@ -213,8 +237,34 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun exportTournamentNotes(context: Context, uri: Uri, onResult: (Boolean) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                val converters = TournamentConverters()
                 val results = tournamentNoteDao.getAllResults().first()
-                val wrapper = TournamentExportWrapper(notes = results)
+                
+                // Wir mappen die Notizen und laden die echten Bilddaten in Base64
+                val resultsWithImages = results.map { result ->
+                    val holeNotes = converters.toHoleNoteList(result.notesJson)
+                    val updatedHoleNotes = holeNotes.map { note ->
+                        val imagesWithData = note.getAllImages().map { img ->
+                            val file = File(img.imagePath)
+                            if (file.exists()) {
+                                try {
+                                    val bytes = file.readBytes()
+                                    val base64 = Base64.encodeToString(bytes, Base64.DEFAULT)
+                                    img.copy(imageData = base64)
+                                } catch (e: Exception) {
+                                    Log.e("GolfViewModel", "Bild konnte nicht für Export gelesen werden", e)
+                                    img
+                                }
+                            } else {
+                                img
+                            }
+                        }
+                        note.copy(images = imagesWithData, legacyImagePath = null, legacyOriginalImagePath = null)
+                    }
+                    result.copy(notesJson = converters.fromHoleNoteList(updatedHoleNotes))
+                }
+
+                val wrapper = TournamentExportWrapper(notes = resultsWithImages)
                 val json = Gson().toJson(wrapper)
                 
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
@@ -271,12 +321,43 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                 if (notesToImport.isEmpty()) throw Exception("Keine Notizen gefunden")
 
                 var importedCount = 0
+                val converters = TournamentConverters()
+
                 notesToImport.forEach { noteObj ->
                     try {
                         val location = findField(noteObj, "location", "c") 
                         val system = findField(noteObj, "system", "d")
-                        val notesJson = findField(noteObj, "notesJson", "e")
+                        var notesJson = findField(noteObj, "notesJson", "e")
                         
+                        // Bilder aus den Notizen verarbeiten
+                        if (notesJson.isNotBlank()) {
+                            val holeNotes = converters.toHoleNoteList(notesJson)
+                            val updatedHoleNotes = holeNotes.map { holeNote ->
+                                val updatedImages = holeNote.getAllImages().mapNotNull { holeImage ->
+                                    if (!holeImage.imageData.isNullOrBlank()) {
+                                        // Bilddaten vorhanden -> Bild lokal speichern
+                                        try {
+                                            val data = Base64.decode(holeImage.imageData, Base64.DEFAULT)
+                                            // Eindeutigen Dateinamen erzwingen durch Zufallswert
+                                            val newPath = saveByteArrayToInternalStorage(data, prefix = "import_${Random.nextInt(10000)}_")
+                                            if (newPath != null) {
+                                                holeImage.copy(
+                                                    imagePath = newPath,
+                                                    originalImagePath = newPath,
+                                                    imageData = null
+                                                )
+                                            } else null
+                                        } catch (e: Exception) {
+                                            Log.e("GolfViewModel", "Bild-Dekodierung fehlgeschlagen", e)
+                                            null
+                                        }
+                                    } else null
+                                }
+                                holeNote.copy(images = updatedImages)
+                            }
+                            notesJson = converters.fromHoleNoteList(updatedHoleNotes)
+                        }
+
                         val date = when {
                             noteObj.has("date") -> noteObj.get("date").asLong
                             noteObj.has("b") -> noteObj.get("b").asLong
@@ -382,9 +463,18 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         saveGame(isCompleted = false)
     }
 
-    fun updateTournamentNote(index: Int, ball: String, startPoint: String, notes: String) {
+    /**
+     * Aktualisiert eine Turnier-Notiz. Unterstützt jetzt mehrere Bilder.
+     */
+    fun updateTournamentNote(
+        index: Int, 
+        ball: String, 
+        startPoint: String, 
+        notes: String, 
+        images: List<HoleImage>
+    ) {
         val updated = tournamentNotes.toMutableList()
-        updated[index] = HoleNote(ball, startPoint, notes)
+        updated[index] = HoleNote(ball, startPoint, notes, images)
         tournamentNotes = updated
     }
 
@@ -517,6 +607,19 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteHistoryEntry(id: Long) {
         viewModelScope.launch {
             dao.deleteById(id)
+        }
+    }
+
+    fun saveByteArrayToInternalStorage(data: ByteArray, prefix: String = ""): String? {
+        val context = getApplication<Application>()
+        val fileName = "${prefix}img_${System.currentTimeMillis()}.jpg"
+        return try {
+            val file = File(context.filesDir, fileName)
+            file.writeBytes(data)
+            file.absolutePath
+        } catch (e: Exception) {
+            Log.e("GolfViewModel", "Bild konnte nicht gespeichert werden", e)
+            null
         }
     }
 }

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -40,7 +41,8 @@ fun TopAppBar(
     titleBarHeight: Dp,
     logoSize: Dp,
     dynamicSystemFontSize: TextUnit,
-    shadowStyle: TextStyle
+    shadowStyle: TextStyle,
+    viewModel: GolfViewModel = viewModel()
 ) {
     val focusManager = LocalFocusManager.current
     
@@ -119,13 +121,19 @@ fun TopAppBar(
         }
         
         var showSystemMenu by remember { mutableStateOf(false) }
+        val isMainScreen = viewModel.currentScreen == Screen.Main
+
         Box(modifier = Modifier.padding(start = 8.adaptiveDp())) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.golfClickable {
-                    focusManager.clearFocus()
-                    showSystemMenu = true
-                }.padding(vertical = 4.adaptiveDp())
+                modifier = Modifier.then(
+                    if (isMainScreen) {
+                        Modifier.golfClickable {
+                            focusManager.clearFocus()
+                            showSystemMenu = true
+                        }
+                    } else Modifier
+                ).padding(vertical = 4.adaptiveDp())
             ) {
                 Text(
                     text = selectedSystem,
@@ -137,49 +145,53 @@ fun TopAppBar(
                     textAlign = TextAlign.End,
                     lineHeight = dynamicSystemFontSize * 1.1f
                 )
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = null,
-                        tint = Color.Black.copy(alpha = 0.3f),
-                        modifier = Modifier.size(titleBarHeight * 0.35f).offset(1.5.dp, 1.5.dp)
-                    )
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(titleBarHeight * 0.35f)
-                    )
+                if (isMainScreen) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = Color.Black.copy(alpha = 0.3f),
+                            modifier = Modifier.size(titleBarHeight * 0.35f).offset(1.5.dp, 1.5.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(titleBarHeight * 0.35f)
+                        )
+                    }
                 }
             }
             
-            MaterialTheme(colorScheme = MaterialTheme.colorScheme.copy(surface = Color.Transparent)) {
-                DropdownMenu(
-                    expanded = showSystemMenu,
-                    onDismissRequest = { showSystemMenu = false },
-                    modifier = Modifier.background(Color.White.copy(alpha = 0.8f))
-                ) {
-                    listOf(
-                        "Miniaturgolf\n(Eternit)",
-                        "Minigolf\n(Beton)",
-                        "Filzgolf",
-                        "Cobigolf",
-                        "Sterngolf"
-                    ).filter { it != selectedSystem }.forEach { system ->
-                        DropdownMenuItem(
-                            text = { 
-                                Text(
-                                    system, 
-                                    color = Color.Black, 
-                                    fontSize = 14.adaptiveSp(),
-                                    style = shadowStyle.copy(color = Color.Black)
-                                ) 
-                            },
-                            onClick = golfClick {
-                                onSystemSelected(system)
-                                showSystemMenu = false
-                            }
-                        )
+            if (isMainScreen) {
+                MaterialTheme(colorScheme = MaterialTheme.colorScheme.copy(surface = Color.Transparent)) {
+                    DropdownMenu(
+                        expanded = showSystemMenu,
+                        onDismissRequest = { showSystemMenu = false },
+                        modifier = Modifier.background(Color.White.copy(alpha = 0.8f))
+                    ) {
+                        listOf(
+                            "Miniaturgolf\n(Eternit)",
+                            "Minigolf\n(Beton)",
+                            "Filzgolf",
+                            "Cobigolf",
+                            "Sterngolf"
+                        ).filter { it != selectedSystem }.forEach { system ->
+                            DropdownMenuItem(
+                                text = { 
+                                    Text(
+                                        system, 
+                                        color = Color.Black, 
+                                        fontSize = 14.adaptiveSp(),
+                                        style = shadowStyle.copy(color = Color.Black)
+                                    ) 
+                                },
+                                onClick = golfClick {
+                                    onSystemSelected(system)
+                                    showSystemMenu = false
+                                }
+                            )
+                        }
                     }
                 }
             }

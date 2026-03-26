@@ -36,6 +36,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // Hilfs-Modifier für den "Text-Style" Schlagschatten
 fun Modifier.tournamentTextStyleShadow(
@@ -121,8 +124,8 @@ fun TournamentSelectionScreen(
     ) { uri ->
         uri?.let {
             viewModel.exportTournamentNotes(context, it) { success ->
-                if (success) Toast.makeText(context, "Export erfolgreich!", Toast.LENGTH_SHORT).show()
-                else Toast.makeText(context, "Export fehlgeschlagen.", Toast.LENGTH_SHORT).show()
+                if (success) Toast.makeText(context, "Backup erfolgreich!", Toast.LENGTH_SHORT).show()
+                else Toast.makeText(context, "Backup fehlgeschlagen.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -274,9 +277,13 @@ fun TournamentSelectionScreen(
 
                 SmallOptionButton(
                     icon = Icons.Default.FileUpload,
-                    label = "Export",
+                    label = "Backup",
                     color = Color(0xFFFF9800),
-                    onClick = { exportLauncher.launch("turnier_strategien.bgsc") },
+                    onClick = {
+                        val timeStamp = SimpleDateFormat("ddMMyyyy_HHmm", Locale.getDefault()).format(Date())
+                        val fileName = "BGSC_Turniernotizen_$timeStamp.bgsc"
+                        exportLauncher.launch(fileName)
+                    },
                     shadowStyle = shadowStyle
                 )
 
