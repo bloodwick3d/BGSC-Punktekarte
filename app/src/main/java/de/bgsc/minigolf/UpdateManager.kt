@@ -4,11 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.FileProvider
+import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.*
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
 
 data class GitHubRelease(
     @SerializedName("tag_name") val tagName: String,
@@ -21,67 +23,50 @@ data class GitHubAsset(
     @SerializedName("name") val name: String
 )
 
+sealed class UpdateResult {
+    data class NewVersion(val version: String, val url: String, val notes: String?) : UpdateResult()
+    data object NoUpdate : UpdateResult()
+    data class Error(val message: String) : UpdateResult()
+}
+
 class UpdateManager(private val context: Context) {
     private val client = OkHttpClient()
     private val repoUrl = "https://api.github.com/repos/bloodwick3d/BGSC-Punktekarte/releases/latest"
 
-    fun checkForUpdates(
-        currentVersion: String, 
-        onUpdateAvailable: (String, String, String?) -> Unit,
-        onNoUpdate: () -> Unit = {},
-        onError: (String) -> Unit = {}
-    ) {
+    suspend fun checkForUpdates(currentVersion: String): UpdateResult = withContext(Dispatchers.IO) {
         val request = Request.Builder()
             .url(repoUrl)
             .header("User-Agent", "MiniGolf-Score-App")
             .build()
 
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("UpdateManager", "Netzwerkfehler: ${e.message}")
-                onError(e.message ?: "Unbekannter Netzwerkfehler")
+        try {
+            val response = client.newCall(request).execute()
+            val responseBody = response.body.string()
+
+            if (!response.isSuccessful) {
+                return@withContext UpdateResult.Error("GitHub Fehler: ${response.code}")
             }
 
-            override fun onResponse(call: Call, response: Response) {
-                val body = response.body
-                val responseBody = body.string()
-                
-                if (!response.isSuccessful) {
-                    Log.e("UpdateManager", "GitHub Fehler: ${response.code}")
-                    onError("GitHub Fehler: ${response.code}")
-                    return
-                }
+            val release = Gson().fromJson(responseBody, GitHubRelease::class.java)
+            val latestClean = release.tagName.lowercase().removePrefix("v").split("-")[0].trim()
+            val currentClean = currentVersion.lowercase().removePrefix("v").split("-")[0].trim()
 
-                responseBody.let { json ->
-                    try {
-                        val release = com.google.gson.Gson().fromJson(json, GitHubRelease::class.java)
-                        val latestClean = release.tagName.lowercase().removePrefix("v").split("-")[0].trim()
-                        val currentClean = currentVersion.lowercase().removePrefix("v").split("-")[0].trim()
-                        
-                        Log.i("UpdateManager", "VERGLEICH: Lokal [$currentClean] | GitHub [$latestClean]")
-                        
-                        if (latestClean == currentClean) {
-                            onNoUpdate()
-                            return
-                        }
-                        
-                        if (isNewerVersion(currentClean, latestClean)) {
-                            val apkAsset = release.assets.find { it.name.endsWith(".apk") }
-                            if (apkAsset != null) {
-                                onUpdateAvailable(latestClean, apkAsset.downloadUrl, release.body)
-                            } else {
-                                onNoUpdate()
-                            }
-                        } else {
-                            onNoUpdate()
-                        }
-                    } catch (e: Exception) {
-                        Log.e("UpdateManager", "Fehler bei Versionsprüfung: ${e.message}")
-                        onError("Datenfehler")
-                    }
+            Log.i("UpdateManager", "VERGLEICH: Lokal [$currentClean] | GitHub [$latestClean]")
+
+            if (isNewerVersion(currentClean, latestClean)) {
+                val apkAsset = release.assets.find { it.name.endsWith(".apk") }
+                if (apkAsset != null) {
+                    UpdateResult.NewVersion(latestClean, apkAsset.downloadUrl, release.body)
+                } else {
+                    UpdateResult.NoUpdate
                 }
+            } else {
+                UpdateResult.NoUpdate
             }
-        })
+        } catch (e: Exception) {
+            Log.e("UpdateManager", "Fehler bei Versionsprüfung: ${e.message}")
+            UpdateResult.Error(e.message ?: "Unbekannter Fehler")
+        }
     }
 
     private fun isNewerVersion(current: String, latest: String): Boolean {
@@ -100,34 +85,36 @@ class UpdateManager(private val context: Context) {
         } catch (_: Exception) { false }
     }
 
-    fun downloadAndInstallApk(url: String, onProgress: (Float) -> Unit) {
+    suspend fun downloadAndInstallApk(url: String, onProgress: (Float) -> Unit) = withContext(Dispatchers.IO) {
         val request = Request.Builder().url(url).header("User-Agent", "MiniGolf-Score-App").build()
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { Log.e("UpdateManager", "Download Fehler: ${e.message}") }
-            override fun onResponse(call: Call, response: Response) {
-                val body = response.body
-                val updateDir = File(context.cacheDir, "updates")
-                if (!updateDir.exists()) updateDir.mkdirs()
-                val file = File(updateDir, "update.apk")
-                
-                val totalBytes = body.contentLength()
-                try {
-                    body.byteStream().use { input ->
-                        FileOutputStream(file).use { output ->
-                            val buffer = ByteArray(8192)
-                            var bytesRead: Int
-                            var downloadedBytes = 0L
-                            while (input.read(buffer).also { bytesRead = it } != -1) {
-                                output.write(buffer, 0, bytesRead)
-                                downloadedBytes += bytesRead
-                                if (totalBytes > 0) onProgress(downloadedBytes.toFloat() / totalBytes)
-                            }
+        try {
+            val response = client.newCall(request).execute()
+            val body = response.body
+            
+            val updateDir = File(context.cacheDir, "updates")
+            if (!updateDir.exists()) updateDir.mkdirs()
+            val file = File(updateDir, "update.apk")
+            
+            val totalBytes = body.contentLength()
+            body.byteStream().use { input ->
+                FileOutputStream(file).use { output ->
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    var downloadedBytes = 0L
+                    while (input.read(buffer).also { bytesRead = it } != -1) {
+                        output.write(buffer, 0, bytesRead)
+                        downloadedBytes += bytesRead
+                        if (totalBytes > 0) {
+                            val progress = downloadedBytes.toFloat() / totalBytes
+                            withContext(Dispatchers.Main) { onProgress(progress) }
                         }
                     }
-                    installApk(file)
-                } catch (e: Exception) { Log.e("UpdateManager", "Speicherfehler: ${e.message}") }
+                }
             }
-        })
+            withContext(Dispatchers.Main) { installApk(file) }
+        } catch (e: Exception) {
+            Log.e("UpdateManager", "Download/Installation fehlgeschlagen: ${e.message}")
+        }
     }
 
     private fun installApk(file: File) {
@@ -142,7 +129,6 @@ class UpdateManager(private val context: Context) {
 
             Log.i("UpdateManager", "Starte Installation für URI: $uri")
             context.startActivity(intent)
-            
         } catch (e: Exception) {
             Log.e("UpdateManager", "Installation fehlgeschlagen: ${e.message}", e)
         }

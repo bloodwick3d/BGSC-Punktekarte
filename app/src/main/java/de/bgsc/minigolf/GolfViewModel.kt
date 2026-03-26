@@ -1,9 +1,7 @@
 package de.bgsc.minigolf
 
 import android.app.Application
-import android.content.Context
 import android.net.Uri
-import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -14,100 +12,35 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
-import com.google.gson.annotations.SerializedName
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.InputStream
-import java.util.zip.GZIPInputStream
-import java.util.zip.GZIPOutputStream
 import kotlin.random.Random
-
-data class HoleImage(
-    @SerializedName("imagePath") val imagePath: String,
-    @SerializedName("originalImagePath") val originalImagePath: String,
-    @SerializedName("imageData") var imageData: String? = null // Base64 kodierte Bilddaten für Export/Import
-)
-
-data class HoleNote(
-    @SerializedName("ball") val ball: String = "",
-    @SerializedName("startPoint") val startPoint: String = "",
-    @SerializedName("notes") val notes: String = "",
-    @SerializedName("images") val images: List<HoleImage> = emptyList(),
-    // Veraltete Felder für Migration (werden automatisch in 'images' überführt)
-    @SerializedName("imagePath") val legacyImagePath: String? = null,
-    @SerializedName("originalImagePath") val legacyOriginalImagePath: String? = null
-) {
-    /**
-     * Gibt alle Bilder zurück, inkl. migrierter Bilder aus alten Versionen.
-     */
-    fun getAllImages(): List<HoleImage> {
-        val result = images.toMutableList()
-        if (legacyImagePath != null && legacyOriginalImagePath != null) {
-            val legacy = HoleImage(legacyImagePath, legacyOriginalImagePath)
-            if (!result.contains(legacy)) result.add(0, legacy)
-        }
-        return result
-    }
-}
-
-data class TournamentExportWrapper(
-    @SerializedName("version") val version: Int = 1,
-    @SerializedName("appIdentifier") val appIdentifier: String = "BGSC_Punktekarte",
-    @SerializedName("exportDate") val exportDate: Long = System.currentTimeMillis(),
-    @SerializedName("notes") val notes: List<TournamentNoteResult>
-)
-
-enum class TournamentTheme {
-    LIGHT, DARK, SYSTEM
-}
-
-sealed class Screen {
-    data object Main : Screen()
-    data object History : Screen()
-    data object ActiveGames : Screen()
-    data object TournamentSelection : Screen()
-    data object TournamentTable : Screen()
-    data object TournamentHistory : Screen()
-}
-
-data class UpdateInfo(
-    val version: String,
-    val downloadUrl: String,
-    val releaseNotes: String?
-)
 
 class GolfViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getDatabase(application)
-    private val dao = database.gameResultDao()
-    private val tournamentNoteDao = database.tournamentNoteDao()
-    private val prefs = application.getSharedPreferences("minigolf_prefs", Context.MODE_PRIVATE)
+    private val gameRepository = GameRepository(database.gameResultDao())
+    private val tournamentRepository = TournamentRepository(database.tournamentNoteDao(), application)
+    private val prefs = application.getSharedPreferences("minigolf_prefs", android.content.Context.MODE_PRIVATE)
     private val updateManager = UpdateManager(application)
 
-    val gameHistory: StateFlow<List<GameResult>> = dao.getAllCompletedResults()
+    val gameHistory: StateFlow<List<GameResult>> = gameRepository.allCompletedResults
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val activeGames: StateFlow<List<GameResult>> = dao.getAllActiveResults()
+    val activeGames: StateFlow<List<GameResult>> = gameRepository.allActiveResults
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val tournamentHistory: StateFlow<List<TournamentNoteResult>> = tournamentNoteDao.getAllResults()
+    val tournamentHistory: StateFlow<List<TournamentNoteResult>> = tournamentRepository.allTournamentResults
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // UI States
     var currentScreen by mutableStateOf<Screen>(Screen.Main)
     
-    var players by mutableStateOf(listOf(Player("Spieler 1", Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f))))
+    var players by mutableStateOf(listOf(Player(application.getString(R.string.default_player_name, 1), Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f))))
         private set
 
-    var selectedSystem by mutableStateOf("Miniaturgolf\n(Eternit)")
+    var selectedSystem by mutableStateOf(application.getString(R.string.system_eternit_newline))
     var currentLocation by mutableStateOf("")
     
     // Tracking für das aktuell geladene Spiel
@@ -127,9 +60,9 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     // App Info
     val appVersion: String = try {
         val pInfo = application.packageManager.getPackageInfo(application.packageName, 0)
-        pInfo.versionName ?: "unknown"
+        pInfo.versionName ?: application.getString(R.string.error_unknown)
     } catch (_: Exception) {
-        "unknown"
+        application.getString(R.string.error_unknown)
     }
 
     // Update States
@@ -143,29 +76,18 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun checkForUpdates(manual: Boolean = false, onFinished: ((String?) -> Unit)? = null) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                updateManager.checkForUpdates(
-                    appVersion,
-                    onUpdateAvailable = { latest, url, notes ->
-                        viewModelScope.launch(Dispatchers.Main) {
-                            updateAvailable = UpdateInfo(latest, url, notes)
-                            onFinished?.invoke(null)
-                        }
-                    },
-                    onNoUpdate = {
-                        viewModelScope.launch(Dispatchers.Main) {
-                            if (manual) onFinished?.invoke("App ist auf dem neuesten Stand.")
-                        }
-                    },
-                    onError = { error ->
-                        viewModelScope.launch(Dispatchers.Main) {
-                            if (manual) onFinished?.invoke("Fehler beim Update-Check: $error")
-                        }
-                    }
-                )
-            } catch (e: Exception) {
-                Log.e("GolfViewModel", "Fehler im Update-Check Prozess", e)
+        viewModelScope.launch {
+            when (val result = updateManager.checkForUpdates(appVersion)) {
+                is UpdateResult.NewVersion -> {
+                    updateAvailable = UpdateInfo(result.version, result.url, result.notes)
+                    onFinished?.invoke(null)
+                }
+                is UpdateResult.NoUpdate -> {
+                    if (manual) onFinished?.invoke(getApplication<Application>().getString(R.string.update_up_to_date))
+                }
+                is UpdateResult.Error -> {
+                    if (manual) onFinished?.invoke(getApplication<Application>().getString(R.string.update_error_check, result.message))
+                }
             }
         }
     }
@@ -173,10 +95,11 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun startUpdate() {
         updateAvailable?.let { info ->
             isDownloadingUpdate = true
-            updateManager.downloadAndInstallApk(info.downloadUrl) { progress ->
-                viewModelScope.launch(Dispatchers.Main) {
+            viewModelScope.launch {
+                updateManager.downloadAndInstallApk(info.downloadUrl) { progress ->
                     downloadProgress = progress
                 }
+                isDownloadingUpdate = false
             }
         }
     }
@@ -185,7 +108,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     var tournamentNotes by mutableStateOf(List(18) { HoleNote() })
         private set
     var tournamentLocation by mutableStateOf("")
-    var tournamentGameMode by mutableStateOf("Miniaturgolf (Eternit)")
+    var tournamentGameMode by mutableStateOf(application.getString(R.string.system_eternit))
     var currentTournamentNoteId by mutableStateOf<Long?>(null)
         private set
 
@@ -233,182 +156,18 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit { putInt("tournament_theme", theme.ordinal) }
     }
 
-    // Tournament Export / Import
-    fun exportTournamentNotes(context: Context, uri: Uri, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val converters = TournamentConverters()
-                val results = tournamentNoteDao.getAllResults().first()
-                
-                // Wir mappen die Notizen und laden die echten Bilddaten in Base64
-                val resultsWithImages = results.map { result ->
-                    val holeNotes = converters.toHoleNoteList(result.notesJson)
-                    val updatedHoleNotes = holeNotes.map { note ->
-                        val imagesWithData = note.getAllImages().map { img ->
-                            val file = File(img.imagePath)
-                            if (file.exists()) {
-                                try {
-                                    val bytes = file.readBytes()
-                                    val base64 = Base64.encodeToString(bytes, Base64.DEFAULT)
-                                    img.copy(imageData = base64)
-                                } catch (e: Exception) {
-                                    Log.e("GolfViewModel", "Bild konnte nicht für Export gelesen werden", e)
-                                    img
-                                }
-                            } else {
-                                img
-                            }
-                        }
-                        note.copy(images = imagesWithData, legacyImagePath = null, legacyOriginalImagePath = null)
-                    }
-                    result.copy(notesJson = converters.fromHoleNoteList(updatedHoleNotes))
-                }
-
-                val wrapper = TournamentExportWrapper(notes = resultsWithImages)
-                val json = Gson().toJson(wrapper)
-                
-                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    GZIPOutputStream(outputStream).use { gzip ->
-                        gzip.write(json.toByteArray(Charsets.UTF_8))
-                    }
-                }
-                withContext(Dispatchers.Main) { onResult(true) }
-            } catch (e: Exception) {
-                Log.e("GolfViewModel", "Export fehlgeschlagen", e)
-                withContext(Dispatchers.Main) { onResult(false) }
-            }
+    // Tournament Export / Import (delegiert an Repository)
+    fun exportTournamentNotes(uri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = tournamentRepository.exportNotes(uri)
+            onResult(success)
         }
     }
 
-    fun importTournamentNotes(context: Context, uri: Uri, onResult: (Boolean, Int) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                var json = ""
-                context.contentResolver.openInputStream(uri)?.use { testStream ->
-                    if (isGzipped(testStream)) {
-                        context.contentResolver.openInputStream(uri)?.use { actualStream ->
-                            json = GZIPInputStream(actualStream).bufferedReader(Charsets.UTF_8).readText()
-                        }
-                    } else {
-                        context.contentResolver.openInputStream(uri)?.use { actualStream ->
-                            json = actualStream.bufferedReader(Charsets.UTF_8).readText()
-                        }
-                    }
-                }
-
-                if (json.isBlank()) throw Exception("Datei leer")
-
-                val jsonElement = JsonParser.parseString(json)
-                val notesToImport = mutableListOf<JsonObject>()
-
-                if (jsonElement.isJsonObject) {
-                    val obj = jsonElement.asJsonObject
-                    if (obj.has("notes") && obj.get("notes").isJsonArray) {
-                        val array = obj.getAsJsonArray("notes")
-                        for (i in 0 until array.size()) {
-                            if (array.get(i).isJsonObject) notesToImport.add(array.get(i).asJsonObject)
-                        }
-                    } else {
-                        notesToImport.add(obj)
-                    }
-                } else if (jsonElement.isJsonArray) {
-                    val array = jsonElement.asJsonArray
-                    for (i in 0 until array.size()) {
-                        if (array.get(i).isJsonObject) notesToImport.add(array.get(i).asJsonObject)
-                    }
-                }
-
-                if (notesToImport.isEmpty()) throw Exception("Keine Notizen gefunden")
-
-                var importedCount = 0
-                val converters = TournamentConverters()
-
-                notesToImport.forEach { noteObj ->
-                    try {
-                        val location = findField(noteObj, "location", "c") 
-                        val system = findField(noteObj, "system", "d")
-                        var notesJson = findField(noteObj, "notesJson", "e")
-                        
-                        // Bilder aus den Notizen verarbeiten
-                        if (notesJson.isNotBlank()) {
-                            val holeNotes = converters.toHoleNoteList(notesJson)
-                            val updatedHoleNotes = holeNotes.map { holeNote ->
-                                val updatedImages = holeNote.getAllImages().mapNotNull { holeImage ->
-                                    if (!holeImage.imageData.isNullOrBlank()) {
-                                        // Bilddaten vorhanden -> Bild lokal speichern
-                                        try {
-                                            val data = Base64.decode(holeImage.imageData, Base64.DEFAULT)
-                                            // Eindeutigen Dateinamen erzwingen durch Zufallswert
-                                            val newPath = saveByteArrayToInternalStorage(data, prefix = "import_${Random.nextInt(10000)}_")
-                                            if (newPath != null) {
-                                                holeImage.copy(
-                                                    imagePath = newPath,
-                                                    originalImagePath = newPath,
-                                                    imageData = null
-                                                )
-                                            } else null
-                                        } catch (e: Exception) {
-                                            Log.e("GolfViewModel", "Bild-Dekodierung fehlgeschlagen", e)
-                                            null
-                                        }
-                                    } else null
-                                }
-                                holeNote.copy(images = updatedImages)
-                            }
-                            notesJson = converters.fromHoleNoteList(updatedHoleNotes)
-                        }
-
-                        val date = when {
-                            noteObj.has("date") -> noteObj.get("date").asLong
-                            noteObj.has("b") -> noteObj.get("b").asLong
-                            noteObj.has("timestamp") -> noteObj.get("timestamp").asLong
-                            else -> System.currentTimeMillis()
-                        }
-
-                        val cleanNote = TournamentNoteResult(
-                            id = 0,
-                            date = date,
-                            location = location,
-                            system = system,
-                            notesJson = notesJson
-                        )
-                        tournamentNoteDao.insert(cleanNote)
-                        importedCount++
-                    } catch (e: Exception) {
-                        Log.e("GolfViewModel", "Eintrag fehlerhaft", e)
-                    }
-                }
-                withContext(Dispatchers.Main) { onResult(true, importedCount) }
-            } catch (e: Exception) {
-                Log.e("GolfViewModel", "Import fehlgeschlagen: ${e.message}", e)
-                withContext(Dispatchers.Main) { onResult(false, 0) }
-            }
-        }
-    }
-
-    private fun findField(obj: JsonObject, originalName: String, proguardName: String): String {
-        return when {
-            obj.has(originalName) -> {
-                val el = obj.get(originalName)
-                if (el.isJsonPrimitive) el.asString else el.toString()
-            }
-            obj.has(proguardName) -> {
-                val el = obj.get(proguardName)
-                if (el.isJsonPrimitive) el.asString else el.toString()
-            }
-            else -> ""
-        }
-    }
-
-    private fun isGzipped(inputStream: InputStream): Boolean {
-        return try {
-            val signature = ByteArray(2)
-            val read = inputStream.read(signature)
-            if (read != 2) return false
-            val head = (signature[0].toInt() and 0xff) or ((signature[1].toInt() and 0xff) shl 8)
-            head == GZIPInputStream.GZIP_MAGIC
-        } catch (_: Exception) {
-            false
+    fun importTournamentNotes(uri: Uri, onResult: (Boolean, Int) -> Unit) {
+        viewModelScope.launch {
+            val (success, count) = tournamentRepository.importNotes(uri)
+            onResult(success, count)
         }
     }
 
@@ -459,18 +218,14 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         updatedPlayers[playerIndex] = player.copy(roundScores = updatedRounds)
         players = updatedPlayers
         
-        // Automatisches Zwischenspeichern bei jeder Punkteänderung
         saveGame(isCompleted = false)
     }
 
-    /**
-     * Aktualisiert eine Turnier-Notiz. Unterstützt jetzt mehrere Bilder.
-     */
     fun updateTournamentNote(
-        index: Int, 
-        ball: String, 
-        startPoint: String, 
-        notes: String, 
+        index: Int,
+        ball: String,
+        startPoint: String,
+        notes: String,
         images: List<HoleImage>
     ) {
         val updated = tournamentNotes.toMutableList()
@@ -489,7 +244,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun resetTournamentNotes() {
         tournamentNotes = List(18) { HoleNote() }
         tournamentLocation = ""
-        tournamentGameMode = "Miniaturgolf (Eternit)"
+        tournamentGameMode = getApplication<Application>().getString(R.string.system_eternit)
         currentTournamentNoteId = null
     }
 
@@ -498,7 +253,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         val system = tournamentGameMode
         val notes = tournamentNotes
         val existingId = currentTournamentNoteId
-        
+
         viewModelScope.launch {
             val result = TournamentNoteResult(
                 id = existingId ?: 0L,
@@ -507,7 +262,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                 system = system,
                 notesJson = TournamentConverters().fromHoleNoteList(notes)
             )
-            val newId = tournamentNoteDao.insert(result)
+            val newId = tournamentRepository.insert(result)
             if (existingId == null) {
                 currentTournamentNoteId = newId
             }
@@ -516,7 +271,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteTournamentNoteEntry(id: Long) {
         viewModelScope.launch {
-            tournamentNoteDao.deleteById(id)
+            tournamentRepository.deleteById(id)
             if (currentTournamentNoteId == id) {
                 currentTournamentNoteId = null
             }
@@ -529,7 +284,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun resetAll() {
-        players = listOf(Player("Spieler 1", Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f)))
+        players = listOf(Player(getApplication<Application>().getString(R.string.default_player_name, 1), Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f)))
         currentLocation = ""
         currentGameId = null
         resetTournamentNotes()
@@ -546,7 +301,6 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                 name = ps.name,
                 color = Color(ps.colorInt),
                 roundScores = ps.holeScores.ifEmpty { 
-                    // Fallback für alte Datenstrukturen
                     ps.rounds.map { List(18) { null } } 
                 }
             )
@@ -584,13 +338,11 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                 isFullGame = isFullGame,
                 isCompleted = isCompleted
             )
-            val newId = dao.insert(result)
+            val newId = gameRepository.insert(result)
             if (existingId == null) {
                 currentGameId = newId
             }
             
-            // Wenn das Spiel final abgeschlossen wurde, setzen wir die ID zurück
-            // für ein mögliches neues Spiel
             if (isCompleted) {
                 currentGameId = null
             }
@@ -600,26 +352,17 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun completeGame(game: GameResult) {
         viewModelScope.launch {
             val completedGame = game.copy(isCompleted = true)
-            dao.insert(completedGame)
+            gameRepository.insert(completedGame)
         }
     }
 
     fun deleteHistoryEntry(id: Long) {
         viewModelScope.launch {
-            dao.deleteById(id)
+            gameRepository.deleteById(id)
         }
     }
 
     fun saveByteArrayToInternalStorage(data: ByteArray, prefix: String = ""): String? {
-        val context = getApplication<Application>()
-        val fileName = "${prefix}img_${System.currentTimeMillis()}.jpg"
-        return try {
-            val file = File(context.filesDir, fileName)
-            file.writeBytes(data)
-            file.absolutePath
-        } catch (e: Exception) {
-            Log.e("GolfViewModel", "Bild konnte nicht gespeichert werden", e)
-            null
-        }
+        return tournamentRepository.saveByteArrayToInternalStorage(data, prefix)
     }
 }

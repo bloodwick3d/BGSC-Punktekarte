@@ -14,12 +14,16 @@ android {
         applicationId "de.bgsc.minigolf"
         minSdk 24
         targetSdk = 36
-        versionCode 14
-        versionName "1.1.0"
+        versionCode 15
+        versionName "2.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
+        }
+
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
         }
     }
 
@@ -55,6 +59,8 @@ android {
     sourceSets {
         main {
             kotlin.srcDirs += 'build/generated/ksp/main/kotlin'
+            // Schema-Ordner für Room
+            resources.srcDirs += 'schemas'
         }
         debug {
             kotlin.srcDirs += 'build/generated/ksp/debug/kotlin'

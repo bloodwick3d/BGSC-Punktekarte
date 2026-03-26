@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
                                 confirmButton = {
                                     Button(
                                         onClick = golfClick {
-                                            golfViewModel.importTournamentNotes(this@MainActivity, uri) { success, count ->
+                                            golfViewModel.importTournamentNotes(uri) { success, count ->
                                                 if (success) {
                                                     Toast.makeText(this@MainActivity, "$count Notizen importiert!", Toast.LENGTH_SHORT).show()
                                                     golfViewModel.currentScreen = Screen.TournamentHistory
@@ -205,7 +205,7 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         val uri = intent.data
         if (uri != null) {
-            golfViewModel.importTournamentNotes(this, uri) { success, count ->
+            golfViewModel.importTournamentNotes(uri) { success, count ->
                 if (success) {
                     Toast.makeText(this, "$count Notizen importiert!", Toast.LENGTH_SHORT).show()
                     golfViewModel.currentScreen = Screen.TournamentHistory

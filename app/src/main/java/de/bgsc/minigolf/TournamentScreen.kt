@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import kotlinx.coroutines.delay
 import java.io.ByteArrayOutputStream
 import java.io.File
 
@@ -127,16 +129,18 @@ fun TournamentScreen(
 
             Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(16.adaptiveDp())) {
                 notes.forEachIndexed { index, note ->
-                    TournamentRow(
-                        holeNumber = index + 1, note = note,
-                        onUpdate = { b, s, n, imgs -> viewModel.updateTournamentNote(index, b, s, n, imgs) },
-                        onImageSelected = { uri -> croppingHoleInfo.value = index to uri },
-                        onGalleryRequest = { galleryHoleIndex.value = index },
-                        shadowStyle = shadowStyle
-                    )
-                    Spacer(Modifier.height(8.adaptiveDp()))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                    Spacer(Modifier.height(8.adaptiveDp()))
+                    key(index) {
+                        TournamentRow(
+                            holeNumber = index + 1, note = note,
+                            onUpdate = { b, s, n, imgs -> viewModel.updateTournamentNote(index, b, s, n, imgs) },
+                            onImageSelected = { uri -> croppingHoleInfo.value = index to uri },
+                            onGalleryRequest = { galleryHoleIndex.value = index },
+                            shadowStyle = shadowStyle
+                        )
+                        Spacer(Modifier.height(8.adaptiveDp()))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        Spacer(Modifier.height(8.adaptiveDp()))
+                    }
                 }
             }
         }
@@ -335,10 +339,42 @@ fun TournamentRow(
 
 @Composable
 fun TournamentTextField(value: String, onValueChange: (String) -> Unit, placeholder: String, modifier: Modifier, shadowStyle: TextStyle) {
-    Box(modifier = modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(6.adaptiveDp())).padding(vertical = 6.adaptiveDp(), horizontal = 8.adaptiveDp())) {
-        if (value.isEmpty()) {
-            Text(text = placeholder, fontSize = 12.adaptiveSp(), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)))
+    // Lokaler State für sofortiges Feedback beim Tippen
+    var localText by remember(value) { mutableStateOf(value) }
+
+    // Synchronisation mit dem ViewModel nach 500ms Inaktivität (Debounce)
+    LaunchedEffect(localText) {
+        if (localText != value) {
+            delay(500)
+            onValueChange(localText)
         }
-        BasicTextField(value = value, onValueChange = onValueChange, textStyle = shadowStyle.copy(fontSize = 13.adaptiveSp(), textAlign = TextAlign.Start, color = MaterialTheme.colorScheme.onSurface), cursorBrush = SolidColor(MaterialTheme.colorScheme.primary), modifier = Modifier.fillMaxWidth())
+    }
+
+    Box(modifier = modifier
+        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(6.adaptiveDp()))
+        .padding(vertical = 6.adaptiveDp(), horizontal = 8.adaptiveDp())
+    ) {
+        if (localText.isEmpty()) {
+            Text(
+                text = placeholder, 
+                fontSize = 12.adaptiveSp(), 
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), 
+                style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+            )
+        }
+        BasicTextField(
+            value = localText, 
+            onValueChange = { localText = it }, 
+            textStyle = shadowStyle.copy(fontSize = 13.adaptiveSp(), textAlign = TextAlign.Start, color = MaterialTheme.colorScheme.onSurface), 
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary), 
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { 
+                    // Sofort-Sync beim Verlassen des Feldes
+                    if (!it.isFocused && localText != value) {
+                        onValueChange(localText)
+                    }
+                }
+        )
     }
 }

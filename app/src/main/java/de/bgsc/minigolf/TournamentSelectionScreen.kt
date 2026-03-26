@@ -123,7 +123,7 @@ fun TournamentSelectionScreen(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri ->
         uri?.let {
-            viewModel.exportTournamentNotes(context, it) { success ->
+            viewModel.exportTournamentNotes(it) { success ->
                 if (success) Toast.makeText(context, "Backup erfolgreich!", Toast.LENGTH_SHORT).show()
                 else Toast.makeText(context, "Backup fehlgeschlagen.", Toast.LENGTH_SHORT).show()
             }
@@ -135,7 +135,7 @@ fun TournamentSelectionScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            viewModel.importTournamentNotes(context, it) { success, count ->
+            viewModel.importTournamentNotes(it) { success, count ->
                 if (success) Toast.makeText(context, "$count Notizen importiert!", Toast.LENGTH_SHORT).show()
                 else Toast.makeText(context, "Import fehlgeschlagen (Datei ungültig?).", Toast.LENGTH_SHORT).show()
             }

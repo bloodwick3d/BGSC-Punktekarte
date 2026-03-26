@@ -6,7 +6,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [GameResult::class, TournamentNoteResult::class], version = 8, exportSchema = false)
+@Database(
+    entities = [GameResult::class, TournamentNoteResult::class], 
+    version = 8, 
+    exportSchema = true
+)
 @TypeConverters(Converters::class, TournamentConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun gameResultDao(): GameResultDao
@@ -23,7 +27,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "minigolf_database"
                 )
-                .fallbackToDestructiveMigration(true)
+                .fallbackToDestructiveMigration(false)
                 .build()
                 INSTANCE = instance
                 instance
