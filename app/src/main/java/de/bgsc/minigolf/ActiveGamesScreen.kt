@@ -2,6 +2,7 @@ package de.bgsc.minigolf
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -118,6 +119,7 @@ fun ActiveGamesScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .pointerInput(Unit) { detectTapGestures { } } // Klicks abfangen!
             .then(if (!fullScreenEnabled) Modifier.systemBarsPadding() else Modifier)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -343,9 +345,17 @@ fun ActiveGameItem(
                 Spacer(Modifier.height(12.adaptiveDp()))
                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
                 players.forEach { player ->
-                    val allRoundsFull = player.roundIsFull.isNotEmpty() && player.roundIsFull.all { it }
                     val totalScore = player.totalScore
-                    val totalColor = if (allRoundsFull) getScoreColor(totalScore, game.system, Color.Black, player.rounds.size) else Color.Black
+                    
+                    // Live-Farbe für das Gesamtergebnis (Prognose über alle Runden)
+                    val totalPlayed = player.holeScores.sumOf { round -> round.count { it != null && it > 0 } }
+                    val totalColor = getScoreColor(
+                        total = totalScore, 
+                        system = game.system, 
+                        defaultColor = Color.White, 
+                        rounds = player.rounds.size, 
+                        playedHoles = totalPlayed
+                    )
                     
                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.adaptiveDp())) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -356,8 +366,16 @@ fun ActiveGameItem(
                             Row(modifier = Modifier.padding(start = 0.adaptiveDp()), verticalAlignment = Alignment.CenterVertically) {
                                 Text("Runden: ", fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
                                 player.rounds.forEachIndexed { rIdx, rSum ->
-                                    val isThisRoundFull = player.roundIsFull.getOrNull(rIdx) ?: false
-                                    val rColor = if (isThisRoundFull) getScoreColor(rSum, game.system, Color.DarkGray, 1) else Color.DarkGray
+                                    // Live-Farbe für die einzelne Runde (Prognose auf 18er Basis)
+                                    val playedInRound = player.holeScores.getOrNull(rIdx)?.count { it != null && it > 0 } ?: 0
+                                    val rColor = getScoreColor(
+                                        total = rSum, 
+                                        system = game.system, 
+                                        defaultColor = Color.White,
+                                        rounds = 1, 
+                                        playedHoles = playedInRound
+                                    )
+
                                     Text(rSum.toString(), fontSize = 12.adaptiveSp(), color = rColor, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = rColor))
                                     if (rIdx < player.rounds.size - 1) Text(" | ", fontSize = 12.adaptiveSp(), color = Color.Gray, fontFamily = CalibriFontFamily)
                                 }

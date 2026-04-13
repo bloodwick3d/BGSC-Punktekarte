@@ -282,24 +282,24 @@ fun generateBitmapFromData(
             paint.alpha = 255
             
             if (numRounds == 1) {
-                val isFull = player.roundIsFull.firstOrNull() ?: true
+                val played = player.holeScores.firstOrNull()?.count { it != null && it > 0 } ?: 0
                 textPaint.textSize = 16f * scale
                 textPaint.typeface = calibriBold
-                textPaint.color = if (isFull) getInternalScoreColor(player.totalScore, system, 1) else Color.WHITE
+                textPaint.color = getInternalScoreColor(player.totalScore, system, 1, playedHoles = played)
                 drawText(player.totalScore.toString(), currentX + playerColumnWidth / 2f - textPaint.measureText(player.totalScore.toString()) / 2f, currentY + (tableBottom - currentY) / 2f + 6f * scale, textPaint)
             } else {
                 for (rIdx in 0 until numRounds) {
                     val rSum = player.rounds.getOrNull(rIdx) ?: 0
-                    val isFull = player.roundIsFull.getOrNull(rIdx) ?: true
+                    val playedInRound = player.holeScores.getOrNull(rIdx)?.count { it != null && it > 0 } ?: 0
                     textPaint.textSize = 11f * scale
                     textPaint.typeface = calibriBold
-                    textPaint.color = if (isFull) getInternalScoreColor(rSum, system, 1) else Color.WHITE
+                    textPaint.color = getInternalScoreColor(rSum, system, 1, playedHoles = playedInRound)
                     drawText(rSum.toString(), currentX + (rIdx * roundWidth) + roundWidth / 2f - textPaint.measureText(rSum.toString()) / 2f, currentY + 20f * scale, textPaint)
                 }
-                val allRoundsFull = player.roundIsFull.isNotEmpty() && player.roundIsFull.all { it }
+                val totalPlayed = player.holeScores.sumOf { round -> round.count { it != null && it > 0 } }
                 textPaint.textSize = 14f * scale
                 textPaint.typeface = calibriBold
-                textPaint.color = if (allRoundsFull) getInternalScoreColor(player.totalScore, system, numRounds) else Color.WHITE
+                textPaint.color = getInternalScoreColor(player.totalScore, system, numRounds, playedHoles = totalPlayed)
                 drawText(player.totalScore.toString(), currentX + playerColumnWidth / 2f - textPaint.measureText(player.totalScore.toString()) / 2f, tableBottom - 8f * scale, textPaint)
             }
             currentX += (playerColumnWidth + playerGap)
@@ -363,30 +363,46 @@ private fun blurBitmap(bitmap: Bitmap, context: Context, radius: Float = 25f): B
     return output.scale(bitmap.width, bitmap.height)
 }
 
-private fun getInternalScoreColor(total: Int, system: String, rounds: Int): Int {
+private fun getInternalScoreColor(total: Int, system: String, rounds: Int, playedHoles: Int = 0): Int {
+    if (rounds <= 0) return Color.WHITE
+    
+    // Live-Prognose Logik (18 + Fehler)
+    val effectiveScore = if (playedHoles > 0) {
+        val totalPlannedHoles = rounds * 18
+        val misses = total - playedHoles
+        totalPlannedHoles + misses
+    } else {
+        total
+    }
+
+    val average = effectiveScore.toFloat() / rounds
+
     return when {
         system.contains("Eternit") -> {
-            when (total) {
-                in (18 * rounds)..(19 * rounds) -> "#2196F3".toColorInt()
-                in (20 * rounds)..(24 * rounds) -> "#4CAF50".toColorInt()
-                in (25 * rounds)..(29 * rounds) -> "#F44336".toColorInt()
-                else -> Color.WHITE
+            when {
+                average < 18f -> Color.WHITE
+                average < 20f -> "#2196F3".toColorInt() // Blau
+                average < 25f -> "#4CAF50".toColorInt() // Grün
+                average < 30f -> "#F44336".toColorInt() // Rot
+                else -> Color.BLACK                    // Schwarz
             }
         }
         system.contains("Beton") -> {
-            when (total) {
-                in (18 * rounds)..(24 * rounds) -> "#2196F3".toColorInt()
-                in (25 * rounds)..(29 * rounds) -> "#4CAF50".toColorInt()
-                in (30 * rounds)..(35 * rounds) -> "#F44336".toColorInt()
-                else -> Color.WHITE
+            when {
+                average < 18f -> Color.WHITE
+                average < 25f -> "#2196F3".toColorInt() // Blau
+                average < 30f -> "#4CAF50".toColorInt() // Grün
+                average < 36f -> "#F44336".toColorInt() // Rot
+                else -> Color.BLACK                    // Schwarz
             }
         }
-        else -> {
-            when (total) {
-                in (18 * rounds)..(29 * rounds) -> "#2196F3".toColorInt()
-                in (30 * rounds)..(35 * rounds) -> "#4CAF50".toColorInt()
-                in (36 * rounds)..(39 * rounds) -> "#F44336".toColorInt()
-                else -> Color.WHITE
+        else -> { // Filz, Stern, Cobi
+            when {
+                average < 18f -> Color.WHITE
+                average < 30f -> "#2196F3".toColorInt() // Blau
+                average < 36f -> "#4CAF50".toColorInt() // Grün
+                average < 40f -> "#F44336".toColorInt() // Rot
+                else -> Color.BLACK                    // Schwarz
             }
         }
     }

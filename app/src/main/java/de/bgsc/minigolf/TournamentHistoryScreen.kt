@@ -141,6 +141,7 @@ fun TournamentHistoryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .pointerInput(Unit) { detectTapGestures { } } // Klicks abfangen!
     ) {
         Column(
             modifier = Modifier
@@ -288,7 +289,12 @@ fun TournamentDetailsView(
         if (isPreviewActive) previewImages = null else onDismiss()
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) { detectTapGestures { } }, // Klicks abfangen!
+        color = MaterialTheme.colorScheme.background
+    ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier

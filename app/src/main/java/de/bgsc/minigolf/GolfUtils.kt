@@ -13,33 +13,56 @@ import androidx.compose.ui.graphics.Color
 import com.google.gson.Gson
 import java.util.zip.GZIPOutputStream
 
-fun getScoreColor(total: Int, system: String, defaultColor: Color, rounds: Int = 1): Color {
+/**
+ * Berechnet die Farbe basierend auf dem Score.
+ * Unterstützt Live-Prognose, wenn playedHoles > 0 übergeben wird.
+ */
+fun getScoreColor(
+    total: Int,
+    system: String,
+    defaultColor: Color,
+    rounds: Int = 1,
+    playedHoles: Int = 0
+): Color {
+    if (rounds <= 0) return defaultColor
+
+    // Falls live gespielt wird, berechnen wir die Prognose (Basis 18 + Fehler)
+    val effectiveScore = if (playedHoles > 0) {
+        val totalPlannedHoles = rounds * 18
+        val misses = total - playedHoles
+        totalPlannedHoles + misses
+    } else {
+        total
+    }
+
+    val average = effectiveScore.toFloat() / rounds
+
     return when {
         system.contains("Eternit") -> {
             when {
-                total in (18 * rounds)..(19 * rounds) -> Color(0xFF2196F3) // Blau
-                total in (20 * rounds)..(24 * rounds) -> Color(0xFF4CAF50) // Grün
-                total in (25 * rounds)..(29 * rounds) -> Color(0xFFF44336) // Rot
-                total >= (30 * rounds) -> Color.Black // Schwarz
-                else -> defaultColor
+                average < 18f -> defaultColor
+                average < 20f -> Color(0xFF2196F3) // Blau
+                average < 25f -> Color(0xFF4CAF50) // Grün
+                average < 30f -> Color(0xFFF44336) // Rot
+                else -> Color.Black                // Schwarz
             }
         }
         system.contains("Beton") -> {
             when {
-                total in (18 * rounds)..(24 * rounds) -> Color(0xFF2196F3) // Blau
-                total in (25 * rounds)..(29 * rounds) -> Color(0xFF4CAF50) // Grün
-                total in (30 * rounds)..(35 * rounds) -> Color(0xFFF44336) // Rot
-                total >= (36 * rounds) -> Color.Black // Schwarz
-                else -> defaultColor
+                average < 18f -> defaultColor
+                average < 25f -> Color(0xFF2196F3) // Blau
+                average < 30f -> Color(0xFF4CAF50) // Grün
+                average < 36f -> Color(0xFFF44336) // Rot
+                else -> Color.Black                // Schwarz
             }
         }
         else -> { // Filzgolf, Cobigolf und Sterngolf
             when {
-                total in (18 * rounds)..(29 * rounds) -> Color(0xFF2196F3) // Blau
-                total in (30 * rounds)..(35 * rounds) -> Color(0xFF4CAF50) // Grün
-                total in (36 * rounds)..(39 * rounds) -> Color(0xFFF44336) // Rot
-                total >= (40 * rounds) -> Color.Black // Schwarz
-                else -> defaultColor
+                average < 18f -> defaultColor
+                average < 30f -> Color(0xFF2196F3) // Blau
+                average < 36f -> Color(0xFF4CAF50) // Grün
+                average < 40f -> Color(0xFFF44336) // Rot
+                else -> Color.Black                // Schwarz
             }
         }
     }

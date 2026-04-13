@@ -349,9 +349,18 @@ fun ScoreTable(
 
                 players.forEachIndexed { playerIndex, player ->
                     val isPlayerDragging = draggingPlayerIndex == playerIndex
-                    val allRoundsFull = player.roundScores.all { rs -> rs.all { it != null } }
                     val totalScore = player.roundScores.flatten().filterNotNull().sum()
-                    val totalColor = if (allRoundsFull) getScoreColor(totalScore, selectedSystem, player.color, rounds = numRounds) else Color.White
+                    
+                    // Live-Färbung für das Gesamtergebnis (Prognose)
+                    val totalPlayed = player.roundScores.flatten().count { it != null && it > 0 }
+                    val totalColor = getScoreColor(
+                        total = totalScore, 
+                        system = selectedSystem, 
+                        defaultColor = Color.White, // Weiß bei 0
+                        rounds = numRounds,
+                        playedHoles = totalPlayed
+                    )
+                    
                     val footerBgColor = Color(0xFFE0E0E0)
                     
                     Column(modifier = Modifier.width(playerColumnWidth).fillMaxHeight().zIndex(if (isPlayerDragging) 10f else 1f).graphicsLayer { translationX = if (isPlayerDragging) dragOffsetX else 0f; alpha = if (isPlayerDragging) 0.8f else 1f }) {
@@ -377,8 +386,17 @@ fun ScoreTable(
                                     val isLastRound = roundIndex == numRounds - 1
                                     val weight = if (numRounds > 1) (if (isLastRound) 1f else 1f / (numRounds - 1)) else 1f
                                     val roundTotal = scores.filterNotNull().sum()
-                                    val isRoundFull = scores.all { it != null }
-                                    val textColor = if (isRoundFull) getScoreColor(roundTotal, selectedSystem, player.color) else if (roundTotal > 0) Color.White else Color.Transparent
+                                    
+                                    // Live-Färbung für die einzelne Runde (Prognose 18er Basis)
+                                    val playedInRound = scores.count { it != null && it > 0 }
+                                    val textColor = getScoreColor(
+                                        total = roundTotal, 
+                                        system = selectedSystem, 
+                                        defaultColor = Color.White, // Weiß bei 0
+                                        rounds = 1,
+                                        playedHoles = playedInRound
+                                    )
+
                                     Box(modifier = Modifier.weight(weight).fillMaxHeight().background(footerBgColor).background(player.color.copy(alpha = 0.4f)).then(if (!isLastRound) Modifier.background(Color.Black.copy(alpha = 0.15f)) else Modifier).border(0.5.dp, Color.LightGray.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
                                         AnimatedContent(
                                             targetState = roundTotal, 
@@ -391,7 +409,7 @@ fun ScoreTable(
                                                 }.using(SizeTransform(clip = false))
                                             }
                                         ) { targetScore ->
-                                            Text(text = targetScore.toString(), style = shadowStyle.copy(fontWeight = FontWeight.Bold, color = if (textColor == Color.Transparent) Color.Black else textColor, fontSize = if (isLastRound) (rowHeight.value * 0.37f).sp else (rowHeight.value * 0.27f).sp), softWrap = false)
+                                            Text(text = targetScore.toString(), style = shadowStyle.copy(fontWeight = FontWeight.Bold, color = textColor, fontSize = if (isLastRound) (rowHeight.value * 0.37f).sp else (rowHeight.value * 0.27f).sp), softWrap = false)
                                         }
                                     }
                                 }

@@ -2,6 +2,7 @@ package de.bgsc.minigolf
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -116,7 +117,13 @@ fun HistoryScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).then(if (!fullScreenEnabled) Modifier.systemBarsPadding() else Modifier)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .pointerInput(Unit) { detectTapGestures { } } // Klicks abfangen!
+            .then(if (!fullScreenEnabled) Modifier.systemBarsPadding() else Modifier)
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
             Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background, shadowElevation = 4.dp) {
@@ -307,7 +314,21 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
         Column(modifier = Modifier.padding(16.adaptiveDp())) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column {
-                    Text(result.system.replace("\n", " "), fontWeight = FontWeight.Bold, fontSize = 16.adaptiveSp(), style = shadowStyle.copy(color = Color.Black))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (result.isFullGame) Icons.Default.CheckCircle else Icons.Default.Block,
+                            contentDescription = null,
+                            tint = if (result.isFullGame) Color(0xFF4CAF50) else Color(0xFFF44336),
+                            modifier = Modifier.size(16.adaptiveDp())
+                        )
+                        Spacer(Modifier.width(6.adaptiveDp()))
+                        Text(
+                            text = result.system.replace("\n", " "), 
+                            fontWeight = FontWeight.Bold, 
+                            fontSize = 16.adaptiveSp(), 
+                            style = shadowStyle.copy(color = Color.Black)
+                        )
+                    }
                     if (result.location.isNotBlank()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(contentAlignment = Alignment.Center) {
@@ -339,8 +360,18 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
                 Spacer(Modifier.height(12.adaptiveDp()))
                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
                 players.forEach { player ->
-                    val allRoundsFull = player.roundIsFull.isNotEmpty() && player.roundIsFull.all { it }
-                    val totalColor = if (allRoundsFull || result.isFullGame) getScoreColor(player.totalScore, result.system, Color.Black, player.rounds.size) else Color.Black
+                    val totalScore = player.totalScore
+                    
+                    // Live-Farbe für das Gesamtergebnis
+                    val totalPlayed = player.holeScores.sumOf { round -> round.count { it != null && it > 0 } }
+                    val totalColor = getScoreColor(
+                        total = totalScore, 
+                        system = result.system, 
+                        defaultColor = Color.White, 
+                        rounds = player.rounds.size, 
+                        playedHoles = totalPlayed
+                    )
+
                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.adaptiveDp())) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -348,15 +379,34 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
                                 Spacer(Modifier.width(4.dp))
                                 Text(player.name, color = Color(player.colorInt), fontWeight = FontWeight.Bold, fontSize = 16.adaptiveSp(), style = shadowStyle.copy(color = Color(player.colorInt)))
                             }
-                            Text("${player.totalScore} Pkt.", fontWeight = FontWeight.ExtraBold, color = totalColor, fontSize = 18.adaptiveSp(), style = shadowStyle.copy(color = totalColor))
+                            Text(
+                                text = "$totalScore Pkt.", 
+                                fontWeight = FontWeight.ExtraBold, 
+                                color = totalColor, 
+                                fontSize = 18.adaptiveSp(), 
+                                style = shadowStyle.copy(color = totalColor)
+                            )
                         }
                         if (player.rounds.size > 1) {
                             Row(modifier = Modifier.padding(start = 18.adaptiveDp()), verticalAlignment = Alignment.CenterVertically) {
                                 Text("Runden: ", fontSize = 12.adaptiveSp(), color = Color.Gray, style = shadowStyle.copy(color = Color.Gray))
                                 player.rounds.forEachIndexed { rIdx, rSum ->
-                                    val isThisRoundFull = player.roundIsFull.getOrNull(rIdx) ?: result.isFullGame
-                                    val rColor = if (isThisRoundFull) getScoreColor(rSum, result.system, Color.DarkGray, 1) else Color.DarkGray
-                                    Text(rSum.toString(), fontSize = 12.adaptiveSp(), color = rColor, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = rColor))
+                                    val playedInRound = player.holeScores.getOrNull(rIdx)?.count { it != null && it > 0 } ?: 0
+                                    val rColor = getScoreColor(
+                                        total = rSum, 
+                                        system = result.system, 
+                                        defaultColor = Color.White, 
+                                        rounds = 1, 
+                                        playedHoles = playedInRound
+                                    )
+
+                                    Text(
+                                        text = rSum.toString(), 
+                                        fontSize = 12.adaptiveSp(), 
+                                        color = rColor, 
+                                        fontWeight = FontWeight.Bold, 
+                                        style = shadowStyle.copy(color = rColor)
+                                    )
                                     if (rIdx < player.rounds.size - 1) Text(" | ", fontSize = 12.adaptiveSp(), color = Color.Gray, fontFamily = CalibriFontFamily)
                                 }
                             }

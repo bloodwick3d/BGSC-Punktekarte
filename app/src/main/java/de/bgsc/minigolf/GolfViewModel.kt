@@ -353,6 +353,11 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val completedGame = game.copy(isCompleted = true)
             gameRepository.insert(completedGame)
+            
+            // Fix: Falls das beendete Spiel das aktuell geladene ist, Haupttabelle leeren
+            if (game.id == currentGameId) {
+                resetAll()
+            }
         }
     }
 
