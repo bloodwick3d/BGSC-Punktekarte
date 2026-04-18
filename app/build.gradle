@@ -8,14 +8,14 @@ plugins {
 
 android {
     namespace 'de.bgsc.minigolf'
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId "de.bgsc.minigolf"
         minSdk 24
         targetSdk = 36
-        versionCode 16
-        versionName "2.0.1"
+        versionCode 17
+        versionName "2.0.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

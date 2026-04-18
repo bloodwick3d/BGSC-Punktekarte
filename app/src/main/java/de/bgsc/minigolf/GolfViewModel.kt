@@ -199,7 +199,12 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addRound() {
-        players = players.map { it.copy(roundScores = it.roundScores + listOf(List(18) { null })) }
+        if (players.isEmpty()) return
+        val playersWithNewRound = players.map { it.copy(roundScores = it.roundScores + listOf(List(18) { null })) }
+        val updated = playersWithNewRound.toMutableList()
+        val firstPlayer = updated.removeAt(0)
+        updated.add(firstPlayer)
+        players = updated
     }
 
     fun removeRound(roundIndex: Int) {
