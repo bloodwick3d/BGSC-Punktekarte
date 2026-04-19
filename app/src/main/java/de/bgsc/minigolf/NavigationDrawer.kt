@@ -1,5 +1,6 @@
 package de.bgsc.minigolf
 
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
@@ -89,11 +90,16 @@ fun NavigationDrawer(
                 enter = slideInHorizontally(initialOffsetX = { -it }),
                 exit = slideOutHorizontally(targetOffsetX = { -it })
             ) {
+                val drawerBgColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    Color.White.copy(alpha = 0.4f)
+                } else {
+                    Color.White.copy(alpha = 0.92f)
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth(0.75f)
-                        .background(Color.White.copy(alpha = 0.4f))
+                        .background(drawerBgColor)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null

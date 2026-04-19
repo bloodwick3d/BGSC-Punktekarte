@@ -70,15 +70,12 @@ fun generateBitmapFromData(
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     
     bitmap.applyCanvas {
-        // --- 0. HINTERGRUND (Center Crop + Blur) ---
+        // --- 0. HINTERGRUND (Center Crop) ---
         try {
             val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
-            var bgBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.bg_minigolf, options)
+            val bgBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.bg_minigolf, options)
             if (bgBitmap != null) {
-                // 1. Blur anwenden
-                bgBitmap = blurBitmap(bgBitmap, context)
-                
-                // 2. Center Crop Logik berechnen
+                // Center Crop Logik berechnen
                 val bWidth = bgBitmap.width.toFloat()
                 val bHeight = bgBitmap.height.toFloat()
                 val scaleFactor = (totalWidth / bWidth).coerceAtLeast(totalHeight / bHeight)
@@ -336,31 +333,6 @@ fun generateBitmapFromData(
     }
 
     return bitmap
-}
-
-/**
- * Hilfsfunktion zum Weichzeichnen eines Bitmaps.
- */
-@Suppress("DEPRECATION")
-private fun blurBitmap(bitmap: Bitmap, context: Context, radius: Float = 25f): Bitmap {
-    val downscale = 4
-    val width = (bitmap.width / downscale).coerceAtLeast(1)
-    val height = (bitmap.height / downscale).coerceAtLeast(1)
-    val input = bitmap.scale(width, height)
-    
-    val config = input.config ?: Bitmap.Config.ARGB_8888
-    val output = createBitmap(input.width, input.height, config)
-    val rs = android.renderscript.RenderScript.create(context)
-    val blurScript = android.renderscript.ScriptIntrinsicBlur.create(rs, android.renderscript.Element.U8_4(rs))
-    val allIn = android.renderscript.Allocation.createFromBitmap(rs, input)
-    val allOut = android.renderscript.Allocation.createFromBitmap(rs, output)
-    blurScript.setRadius(radius)
-    blurScript.setInput(allIn)
-    blurScript.forEach(allOut)
-    allOut.copyTo(output)
-    rs.destroy()
-    
-    return output.scale(bitmap.width, bitmap.height)
 }
 
 private fun getInternalScoreColor(total: Int, system: String, rounds: Int, playedHoles: Int = 0): Int {

@@ -1,5 +1,6 @@
 package de.bgsc.minigolf
 
+import android.os.Build
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -44,6 +45,11 @@ fun AppSettingsDialog(
     onShowInfo: () -> Unit
 ) {
     val buttonShape = RoundedCornerShape(20.dp)
+    val dialogBgColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        Color.White.copy(alpha = 0.4f)
+    } else {
+        Color.White
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -78,7 +84,7 @@ fun AppSettingsDialog(
                 }
             }
         },
-        containerColor = Color.White.copy(alpha = 0.4f),
+        containerColor = dialogBgColor,
         tonalElevation = 0.dp,
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -136,11 +142,16 @@ fun AppSettingsDialog(
 @Composable
 fun AppInfoDialog(appVersion: String, shadowStyle: TextStyle, onDismiss: () -> Unit) {
     val buttonShape = RoundedCornerShape(20.dp)
+    val dialogBgColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        Color.White.copy(alpha = 0.4f)
+    } else {
+        Color.White
+    }
     
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.info_title), color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
-        containerColor = Color.White.copy(alpha = 0.4f),
+        containerColor = dialogBgColor,
         tonalElevation = 0.dp,
         text = {
             Column(

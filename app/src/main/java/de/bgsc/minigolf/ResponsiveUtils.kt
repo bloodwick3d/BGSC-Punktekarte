@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.sp
 fun Int.adaptiveDp(): Dp {
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthPx = windowInfo.containerSize.width
+    if (screenWidthPx <= 0) return this.dp
+    val screenWidthDp = with(density) { screenWidthPx.toDp() }
     return (this * (screenWidthDp.value / 360f)).dp
 }
 
@@ -24,7 +26,9 @@ fun Int.adaptiveDp(): Dp {
 fun Double.adaptiveDp(): Dp {
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthPx = windowInfo.containerSize.width
+    if (screenWidthPx <= 0) return this.toFloat().dp
+    val screenWidthDp = with(density) { screenWidthPx.toDp() }
     return (this.toFloat() * (screenWidthDp.value / 360f)).dp
 }
 
@@ -35,6 +39,8 @@ fun Double.adaptiveDp(): Dp {
 fun Int.adaptiveSp(): TextUnit {
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthPx = windowInfo.containerSize.width
+    if (screenWidthPx <= 0) return this.sp
+    val screenWidthDp = with(density) { screenWidthPx.toDp() }
     return (this * (screenWidthDp.value / 360f)).sp
 }

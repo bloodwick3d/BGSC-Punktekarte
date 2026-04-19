@@ -88,9 +88,18 @@ fun TopAppBar(
             Spacer(Modifier.width(12.adaptiveDp()))
             
             // ORT EINGABEFELD
-            Box(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .golfClickable {
+                        // Fokus wird nur gesetzt, wenn man explizit klickt
+                    }
+            ) {
                 if (currentLocation.isEmpty()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 2.dp) // Kleiner Puffer für den Cursor
+                    ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.Place, null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.size(14.adaptiveDp()).offset(1.dp, 1.dp))
                             Icon(Icons.Default.Place, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(14.adaptiveDp()))
@@ -111,7 +120,8 @@ fun TopAppBar(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Words,
-                        imeAction = ImeAction.Done
+                        imeAction = ImeAction.Done,
+                        autoCorrectEnabled = false // Verhindert ungewollte Popups auf alten Android-Versionen
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = { focusManager.clearFocus() }

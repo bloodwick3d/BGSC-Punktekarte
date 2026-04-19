@@ -57,9 +57,9 @@ fun ScoreTable(
     shadowStyle: TextStyle,
     highlightAmber: Color,
     highlightGold: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState()
 ) {
-    val scrollState = rememberScrollState()
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current

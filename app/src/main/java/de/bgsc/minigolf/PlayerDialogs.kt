@@ -1,5 +1,6 @@
 package de.bgsc.minigolf
 
+import android.os.Build
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -48,11 +49,17 @@ fun EditPlayerDialog(
     val editColor = Color.hsv(editHue, 0.8f, 0.6f)
     val buttonShape = RoundedCornerShape(20.dp)
 
+    val dialogBgColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        Color.White.copy(alpha = 0.4f)
+    } else {
+        Color.White
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Spieler bearbeiten", color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
-        containerColor = Color.White,
-        tonalElevation = 6.dp,
+        containerColor = dialogBgColor,
+        tonalElevation = 0.dp,
         shape = RoundedCornerShape(24.dp),
         text = {
             val tfColors = TextFieldDefaults.colors(
@@ -140,11 +147,17 @@ fun AddPlayerDialog(
     val addColor = Color.hsv(addHue, 0.8f, 0.6f)
     val buttonShape = RoundedCornerShape(20.dp)
 
+    val dialogBgColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        Color.White.copy(alpha = 0.4f)
+    } else {
+        Color.White
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Spieler hinzufügen", color = Color.Black, style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Bold)) },
-        containerColor = Color.White,
-        tonalElevation = 6.dp,
+        containerColor = dialogBgColor,
+        tonalElevation = 0.dp,
         shape = RoundedCornerShape(24.dp),
         text = {
             val tfColors = TextFieldDefaults.colors(

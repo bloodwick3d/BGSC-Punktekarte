@@ -13,9 +13,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -305,23 +303,37 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
     val highlightAmber = Color(0xFFFFB300)
     val highlightGold = Color(0xFFFFD54F)
 
+    val isOverlayVisible = showSideMenu || selectedHolePlayerRound != null || editPlayerIndex != null ||
+            showAddPlayerDialog || showWinnerDialog || showSettingsDialog || showInfoDialog ||
+            viewModel.updateAvailable != null
+
     val currentBlurRadius by animateDpAsState(
-        targetValue = if (showSideMenu || showWinnerDialog || editPlayerIndex != null || showAddPlayerDialog || showSettingsDialog || showInfoDialog || viewModel.currentScreen != Screen.Main || viewModel.updateAvailable != null) 15.dp else 0.dp,
+        targetValue = if (isOverlayVisible) 12.dp else 0.dp,
         animationSpec = tween(300), label = "blur"
+    )
+
+    val scrimAlpha by animateFloatAsState(
+        targetValue = if (isOverlayVisible && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) 0.45f else 0f,
+        animationSpec = tween(300), label = "scrim"
     )
 
     ProvideSafeSound(soundEnabled = viewModel.soundEnabled) {
         ProvideSafeHaptic(hapticEnabled = viewModel.hapticEnabled) {
             val haptic = LocalHapticFeedback.current
-            Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) }) {
+            Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) { 
+                detectTapGestures(onTap = { 
+                    focusManager.clearFocus() 
+                }) 
+            }) {
                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                    Box(modifier = Modifier.fillMaxSize().then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && currentBlurRadius > 0.dp) Modifier.blur(currentBlurRadius) else Modifier).clipToBounds()) {
-                        Image(painter = painterResource(id = R.drawable.bg_minigolf), contentDescription = null, modifier = Modifier.fillMaxSize().blur(15.dp), contentScale = ContentScale.Crop)
+                    Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
+                        Image(painter = painterResource(id = R.drawable.bg_minigolf), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                         
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier),
+                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier)
+                                .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(currentBlurRadius) else Modifier),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             TopAppBar(
@@ -338,6 +350,14 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                 onMovePlayer = { from, to -> viewModel.movePlayer(from, to) }, onRemoveRound = { viewModel.removeRound(it) },
                                 onAddRound = { viewModel.addRound() }, shadowStyle = shadowStyle,
                                 highlightAmber = highlightAmber, highlightGold = highlightGold, modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        if (scrimAlpha > 0f) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = scrimAlpha))
                             )
                         }
                     }
@@ -479,7 +499,7 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
 
 @Composable
 fun FlyingScoreElement(info: FlyingScoreInfo, shadowStyle: TextStyle, onAnimationFinished: () -> Unit) {
-    val progress = remember { androidx.compose.animation.core.Animatable(0f) }
+    val progress = remember { Animatable(0f) }
     val density = LocalDensity.current
     LaunchedEffect(info) { progress.animateTo(targetValue = 1f, animationSpec = tween(450, easing = FastOutSlowInEasing)); onAnimationFinished() }
     val currentX = info.start.x + (info.end.x - info.start.x) * progress.value
