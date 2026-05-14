@@ -46,7 +46,8 @@ fun NavigationDrawer(
     onNewGameClick: () -> Unit,
     onEndGameClick: () -> Unit,
     onTurnierModeToggle: (Boolean) -> Unit,
-    onShowSettings: () -> Unit
+    onShowSettings: () -> Unit,
+    allFilled: Boolean = false
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -186,12 +187,14 @@ fun NavigationDrawer(
                             )
                         }
                         
-                        SideMenuItem(
-                            icon = Icons.Default.EmojiEvents,
-                            text = stringResource(R.string.menu_results_card),
-                            onClick = onShowResultsClick,
-                            contentColor = Color.Black
-                        )
+                        if (allFilled) {
+                            SideMenuItem(
+                                icon = Icons.Default.EmojiEvents,
+                                text = stringResource(R.string.menu_results_card),
+                                onClick = onShowResultsClick,
+                                contentColor = Color.Black
+                            )
+                        }
                         
                         SideMenuItem(
                             icon = Icons.Default.PlayCircleOutline,

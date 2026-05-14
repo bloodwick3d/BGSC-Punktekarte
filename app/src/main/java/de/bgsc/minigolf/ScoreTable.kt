@@ -93,7 +93,7 @@ fun ScoreTable(
     LaunchedEffect(draggingPlayerIndex != null) {
         if (draggingPlayerIndex != null) {
             val screenWidth = windowInfo.containerSize.width.toFloat()
-            
+
             while (true) {
                 val x = pointerXOnScreen.value
                 if (x != null) {
@@ -438,12 +438,12 @@ fun ScoreTable(
                 val hIdx = hole - 1
                 val isCurrentHole = hIdx == currentHoleIndex
                 val isEven = hole % 2 == 0
-                val rowBaseColor = if (isEven) Color.White else Color(0xFFF5F5F5)
+                val rowBaseColor = Color.White // Reines Weiß überall als Basis
 
                 val holeColumnColor by animateColorAsState(
                     targetValue = if (isCurrentHole) highlightAmber else (if (isEven) Color.Black.copy(
-                        alpha = 0.3f
-                    ) else Color.Black.copy(alpha = 0.4f)),
+                        alpha = 0.4f
+                    ) else Color.Black.copy(alpha = 0.3f)),
                     animationSpec = tween(700), label = "holeHighlight"
                 )
 
@@ -509,11 +509,12 @@ fun ScoreTable(
                                             modifier = Modifier
                                                 .weight(weight)
                                                 .fillMaxHeight()
+                                                .background(Color.White) // Basis gegen Transparenz
                                                 .background(cellBgColor)
                                                 .then(
                                                     if (!isCurrentHole) Modifier.background(
                                                         player.color.copy(
-                                                            alpha = if (isEven) 0.1f else 0.2f
+                                                            alpha = if (isEven) 0.2f else 0.1f
                                                         )
                                                     ) else Modifier
                                                 )
@@ -588,6 +589,14 @@ fun ScoreTable(
                                                 )
                                             }
                                         }
+                                        if (!isLastRound) {
+                                            Spacer(
+                                                modifier = Modifier
+                                                    .width(0.5.dp)
+                                                    .fillMaxHeight()
+                                                    .background(Color.LightGray.copy(alpha = 0.2f))
+                                            )
+                                        }
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(2.adaptiveDp()))
@@ -645,7 +654,7 @@ fun ScoreTable(
                             playedHoles = totalPlayed
                         )
 
-                        val footerBgColor = Color(0xFFE0E0E0)
+                        // val footerBgColor = Color(0xFFE0E0E0) // Nicht mehr benötigt
 
                         Column(
                             modifier = Modifier.width(playerColumnWidth).fillMaxHeight()
@@ -656,8 +665,9 @@ fun ScoreTable(
                                 }) {
                             if (numRounds == 1) {
                                 Box(
-                                    modifier = Modifier.fillMaxSize().background(footerBgColor)
-                                        .background(player.color.copy(alpha = 0.4f)),
+                                    modifier = Modifier.fillMaxSize()
+                                        .background(Color.White) // Reines Weiß als Basis
+                                        .background(player.color.copy(alpha = 0.1f)), // Einheitliche 10% Spielerfarbe
                                     contentAlignment = Alignment.Center
                                 ) {
                                     AnimatedContent(
@@ -697,20 +707,22 @@ fun ScoreTable(
                                         val textColor = getScoreColor(
                                             total = roundTotal,
                                             system = selectedSystem,
-                                            defaultColor = Color.White, // Weiß bei 0
+                                            defaultColor = Color.Black,
                                             rounds = 1,
                                             playedHoles = playedInRound
                                         )
 
+                                        // Hintergrundfarbe analog zur Tabelle
+                                        // Hier nehmen wir reines Weiß als feste Basis
                                         Box(
                                             modifier = Modifier.weight(weight).fillMaxHeight()
-                                                .background(footerBgColor)
-                                                .background(player.color.copy(alpha = 0.4f)).then(
+                                                .background(Color.White) // Basis gegen Transparenz
+                                                .background(player.color.copy(alpha = 0.1f)) // Einheitliche 10% Spielerfarbe
+                                                .then(
                                                     if (!isLastRound) Modifier.background(
                                                         Color.Black.copy(alpha = 0.15f)
                                                     ) else Modifier
-                                                )
-                                                .border(0.5.dp, Color.LightGray.copy(alpha = 0.1f)),
+                                                ),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             AnimatedContent(
@@ -737,12 +749,21 @@ fun ScoreTable(
                                                 )
                                             }
                                         }
+                                        if (!isLastRound) {
+                                            Spacer(
+                                                modifier = Modifier
+                                                    .width(0.5.dp)
+                                                    .fillMaxHeight()
+                                                    .background(Color.LightGray.copy(alpha = 0.2f))
+                                            )
+                                        }
                                     }
                                 }
+                                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f), thickness = 0.5.dp)
                                 Box(
                                     modifier = Modifier.fillMaxWidth().weight(1f)
-                                        .background(footerBgColor)
-                                        .background(player.color.copy(alpha = 0.4f)),
+                                        .background(Color.White) // Reines Weiß als Basis
+                                        .background(player.color.copy(alpha = 0.1f)), // Einheitliche 10% Spielerfarbe
                                     contentAlignment = Alignment.Center
                                 ) {
                                     AnimatedContent(

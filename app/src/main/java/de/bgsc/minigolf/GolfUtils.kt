@@ -1,17 +1,59 @@
 package de.bgsc.minigolf
 
 import android.content.ClipData
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.media.MediaScannerConnection
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Base64
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import androidx.compose.ui.graphics.Color
 import com.google.gson.Gson
 import java.util.zip.GZIPOutputStream
+
+/**
+ * Speichert ein Bitmap in der Handy-Galerie (Bilder-Ordner).
+ */
+fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
+    val filename = "BGSC_Ergebnis_${System.currentTimeMillis()}.png"
+    val fos: java.io.OutputStream?
+    
+    try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = context.contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/BGSC_Punktekarte")
+            }
+            val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            fos = imageUri?.let { resolver.openOutputStream(it) }
+        } else {
+            val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()
+            val image = File(imagesDir, filename)
+            fos = FileOutputStream(image)
+            
+            // Modernere Methode den MediaScanner zu benachrichtigen
+            MediaScannerConnection.scanFile(context, arrayOf(image.absolutePath), null, null)
+        }
+
+        fos?.use {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            Toast.makeText(context, "In Galerie gespeichert!", Toast.LENGTH_SHORT).show()
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Toast.makeText(context, "Fehler beim Speichern.", Toast.LENGTH_SHORT).show()
+    }
+}
 
 /**
  * Berechnet die Farbe basierend auf dem Score.
@@ -24,6 +66,8 @@ fun getScoreColor(
     rounds: Int = 1,
     playedHoles: Int = 0
 ): Color {
+    // Wenn das Gesamtergebnis 0 ist, geben wir Schwarz zurück
+    if (total == 0) return Color.Black
     if (rounds <= 0) return defaultColor
 
     // Falls live gespielt wird, berechnen wir die Prognose (Basis 18 + Fehler)

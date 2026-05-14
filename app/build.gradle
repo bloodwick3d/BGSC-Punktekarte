@@ -14,8 +14,8 @@ android {
         applicationId "de.bgsc.minigolf"
         minSdk 24
         targetSdk = 36
-        versionCode 18
-        versionName "2.0.3"
+        versionCode 19
+        versionName "2.0.4"
 
         multiDexEnabled true
 
@@ -102,7 +102,7 @@ androidComponents {
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    coreLibraryDesugaring libs.desugar.jdk.libs
 
     def composeBom = platform(libs.androidx.compose.bom)
     implementation composeBom

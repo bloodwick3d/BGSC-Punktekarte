@@ -1,18 +1,19 @@
 [versions]
 activityCompose = "1.13.0"
-agp = "9.1.1"
-compose-bom = "2026.03.01"
+agp = "9.2.1"
+compose-bom = "2026.05.00"
 compose-material = "1.7.8"
 compose-material3 = "1.4.0"
-compose-ui = "1.10.6"
+compose-ui = "1.11.1"
 core-ktx = "1.18.0"
+desugar_jdk_libs = "2.1.5"
 exifinterface = "1.4.2"
-gson = "2.13.2"
-kotlin = "2.3.20"
+gson = "2.14.0"
+kotlin = "2.3.21"
 lifecycle = "2.10.0"
 lifecycle-viewmodel = "2.10.0"
 room = "2.8.4"
-ksp = "2.3.6"
+ksp = "2.3.7"
 okhttp = "5.3.2"
 coil = "2.7.0"
 
@@ -32,6 +33,7 @@ androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "compose-ui" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "compose-material3" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "compose-material" }
+desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }

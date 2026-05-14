@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,15 +52,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.unit.lerp
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
@@ -239,6 +239,9 @@ class MainActivity : ComponentActivity() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         
+        // Den Standard-Dim-Schleier des Dialogs global entfernen, damit unser Scrim wirkt
+        window.setDimAmount(0f)
+        
         val isDarkTheme = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
 
         if (fullScreen) {
@@ -269,11 +272,16 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
     var flyingScore by remember { mutableStateOf<FlyingScoreInfo?>(null) }
+    var isBadgeTransitioning by remember { mutableStateOf(false) }
 
     val activeGames by viewModel.activeGames.collectAsState()
 
-    if (viewModel.currentScreen != Screen.Main || showSideMenu) {
-        BackHandler { if (showSideMenu) showSideMenu = false else viewModel.onBackPressed() }
+    if (viewModel.currentScreen != Screen.Main || showSideMenu || showWinnerDialog || isBadgeTransitioning) {
+        BackHandler { 
+            if (showSideMenu) showSideMenu = false 
+            else if (showWinnerDialog) showWinnerDialog = false
+            else if (!isBadgeTransitioning) viewModel.onBackPressed() 
+        }
     }
 
     val screenHeight = with(density) { windowInfo.containerSize.height.toDp() }
@@ -285,8 +293,6 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
     val numRounds = remember(players) { players.firstOrNull()?.roundScores?.size ?: 1 }
     val allFilled = remember(players) { players.isNotEmpty() && players.all { p -> p.roundScores.all { rs -> rs.all { it != null } } } }
 
-    LaunchedEffect(allFilled) { if (allFilled) { delay(800); showWinnerDialog = true } }
-    
     LaunchedEffect(viewModel.keepScreenOn) {
         (context as? Activity)?.window?.let { window ->
             if (viewModel.keepScreenOn) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -308,13 +314,15 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
             viewModel.updateAvailable != null
 
     val currentBlurRadius by animateDpAsState(
-        targetValue = if (isOverlayVisible) 12.dp else 0.dp,
-        animationSpec = tween(300), label = "blur"
+        targetValue = if (isOverlayVisible || isBadgeTransitioning) 12.dp else 0.dp,
+        animationSpec = tween(if (isBadgeTransitioning) 450 else 300), 
+        label = "blur"
     )
 
     val scrimAlpha by animateFloatAsState(
-        targetValue = if (isOverlayVisible && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) 0.45f else 0f,
-        animationSpec = tween(300), label = "scrim"
+        targetValue = if (isOverlayVisible || isBadgeTransitioning) 0.3f else 0f,
+        animationSpec = tween(if (isBadgeTransitioning) 450 else 300), 
+        label = "scrim"
     )
 
     ProvideSafeSound(soundEnabled = viewModel.soundEnabled) {
@@ -402,9 +410,20 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                         }
 
                         if (showWinnerDialog) {
-                            Dialog(onDismissRequest = { showWinnerDialog = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+                            // Wir nutzen ein Box-Overlay für 100% Kontrolle über Helligkeit und Animation
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .zIndex(3000f)
+                                    .pointerInput(Unit) {
+                                        // "Klick daneben" zum Schließen
+                                        detectTapGestures { showWinnerDialog = false }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
                                 WinnerCard(
                                     allPlayers = players, selectedSystem = viewModel.selectedSystem, canAddRound = numRounds < 4,
+                                    animateEntry = false, // Wichtig für den nahtlosen Übergang
                                     onNewGame = { viewModel.saveGame(isCompleted = false); viewModel.restartGame(); showWinnerDialog = false },
                                     onShare = {
                                         val playerScores = players.map { p -> PlayerScore(p.name, p.color.toArgb(), p.roundScores.flatten().filterNotNull().sum(), p.roundScores.map { it.filterNotNull().sum() }, p.roundScores.map { it.all { s -> s != null } }, p.roundScores) }
@@ -417,6 +436,85 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                     onDismiss = { showWinnerDialog = false })
                             }
                         }
+
+                        // Gewinner-Badge am rechten Rand, wenn das Spiel fertig ist
+                        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                            val screenWidthPx = constraints.maxWidth.toFloat()
+                            
+                            val transitionProgress by animateFloatAsState(
+                                targetValue = if (isBadgeTransitioning || showWinnerDialog) 1f else 0f,
+                                animationSpec = tween(450, easing = FastOutSlowInEasing),
+                                label = "badge_transition",
+                                finishedListener = {
+                                    if (it == 1f && isBadgeTransitioning) {
+                                        showWinnerDialog = true
+                                        isBadgeTransitioning = false
+                                    } else if (it == 0f) {
+                                        isBadgeTransitioning = false
+                                    }
+                                }
+                            )
+
+                            // Sanfter Farbübergang von Gold zu Weiß
+                            val badgeColor by animateColorAsState(
+                                targetValue = if (isBadgeTransitioning) Color.White else Color(0xFFFFD700),
+                                animationSpec = tween(450),
+                                label = "badge_color"
+                            )
+
+                            // Maße berechnen für den Übergang
+                            val badgeWidth = 50.dp
+                            val badgeHeight = 70.dp
+                            val targetWidth = with(LocalDensity.current) { (screenWidthPx * 0.9f).toDp() }
+                            // Wir schätzen die Höhe der WinnerCard
+                            val targetHeight = 450.dp 
+
+                            if ((allFilled && !showWinnerDialog && viewModel.currentScreen == Screen.Main) || isBadgeTransitioning) {
+                                Surface(
+                                    onClick = golfClick { isBadgeTransitioning = true },
+                                    color = badgeColor,
+                                    shape = RoundedCornerShape(
+                                        topStart = 28.dp,
+                                        bottomStart = 28.dp,
+                                        topEnd = (28 * transitionProgress).dp,
+                                        bottomEnd = (28 * transitionProgress).dp
+                                    ),
+                                    shadowElevation = (8 * (1f - transitionProgress)).dp,
+                                    modifier = Modifier
+                                        .align(Alignment.CenterEnd)
+                                        .offset {
+                                            IntOffset(
+                                                x = (-(screenWidthPx / 2f - with(density) { (targetWidth / 2f).toPx() }) * transitionProgress).roundToInt(),
+                                                y = 0
+                                            )
+                                        }
+                                        .size(
+                                            width = lerp(badgeWidth, targetWidth, transitionProgress),
+                                            height = lerp(badgeHeight, targetHeight, transitionProgress)
+                                        )
+                                        .zIndex(2000f)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                        val iconAlpha = 1f - transitionProgress
+                                        if (iconAlpha > 0.01f) {
+                                            Icon(
+                                                imageVector = Icons.Default.EmojiEvents,
+                                                contentDescription = null,
+                                                tint = Color.Black.copy(alpha = 0.2f * iconAlpha),
+                                                modifier = Modifier.size(32.dp).offset(1.5.dp, 1.5.dp).alpha(iconAlpha)
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Default.EmojiEvents,
+                                                contentDescription = "Ergebnisse anzeigen",
+                                                tint = if (isBadgeTransitioning) Color(0xFFFFD700).copy(alpha = iconAlpha) else Color.White,
+                                                modifier = Modifier.size(32.dp).alpha(iconAlpha)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         if (selectedHolePlayerRound != null) {
                             val (pIdx, hIdx, rIdx) = selectedHolePlayerRound!!
                             ScoreInputDialog(currentScore = players[pIdx].roundScores[rIdx][hIdx], offset = tapOffset, onDismiss = { selectedHolePlayerRound = null }, onScoreSelected = { score, btnOffset -> flyingScore = FlyingScoreInfo(score, btnOffset, tapOffset, pIdx, rIdx, hIdx); selectedHolePlayerRound = null })
@@ -467,7 +565,8 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                             onNewGameClick = { viewModel.saveGame(isCompleted = false); viewModel.restartGame(); showSideMenu = false },
                             onEndGameClick = { viewModel.saveGame(true); viewModel.resetAll(); showSideMenu = false },
                             onTurnierModeToggle = { viewModel.toggleTurnierMode(it) },
-                            onShowSettings = { showSideMenu = false; showSettingsDialog = true }
+                            onShowSettings = { showSideMenu = false; showSettingsDialog = true },
+                            allFilled = allFilled
                         )
                         flyingScore?.let { info -> FlyingScoreElement(info = info, shadowStyle = shadowStyle, onAnimationFinished = { viewModel.updateScore(info.playerIndex, info.roundIndex, info.holeIndex, info.score); flyingScore = null }) }
                     }

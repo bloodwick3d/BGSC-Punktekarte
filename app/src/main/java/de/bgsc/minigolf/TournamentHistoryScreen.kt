@@ -396,8 +396,8 @@ fun ImagePreviewOverlay(
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var boxSize by remember { mutableStateOf(IntSize.Zero) }
-    
-    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+
+    val state = rememberTransformableState { _, zoomChange, offsetChange, _ ->
         val newScale = (scale * zoomChange).coerceIn(1f, 5f)
         if (newScale > 1f) {
             val maxX = (boxSize.width * (newScale - 1f)) / 2f

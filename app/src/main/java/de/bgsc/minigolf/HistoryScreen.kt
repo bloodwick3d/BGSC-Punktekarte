@@ -1,6 +1,10 @@
 package de.bgsc.minigolf
 
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import android.graphics.Bitmap
 import androidx.compose.animation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -16,22 +20,32 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.max
+import kotlin.math.min
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -297,12 +311,28 @@ fun SwipeableHistoryItem(
 
 @Composable
 fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
+    val context = LocalContext.current
     val players = remember(result.playersJson) { Converters().toPlayerScoreList(result.playersJson) }
     val dateStr = remember(result.date) { SimpleDateFormat("dd.MM.yyyy - HH:mm", Locale.getDefault()).format(Date(result.date)) }
     var showDetails by remember { mutableStateOf(false) }
     val sortedPlayers = remember(players) { players.sortedBy { it.totalScore } }
     val winnerTotal = sortedPlayers.firstOrNull()?.totalScore ?: 0
     val winners = remember(sortedPlayers) { sortedPlayers.filter { it.totalScore == winnerTotal }.map { it.name } }
+
+    var resultBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isLoadingBitmap by remember { mutableStateOf(false) }
+    var showFullscreenImage by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showDetails) {
+        if (showDetails && resultBitmap == null) {
+            isLoadingBitmap = true
+            withContext(Dispatchers.IO) {
+                val bmp = generateResultBitmap(context, result)
+                resultBitmap = bmp
+            }
+            isLoadingBitmap = false
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -359,7 +389,7 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
             if (showDetails) {
                 Spacer(Modifier.height(12.adaptiveDp()))
                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
-                players.forEach { player ->
+                sortedPlayers.forEach { player ->
                     val totalScore = player.totalScore
                     
                     // Live-Farbe für das Gesamtergebnis
@@ -412,6 +442,166 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
                             }
                         }
                     }
+                }
+
+                if (isLoadingBitmap) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 16.adaptiveDp()), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.adaptiveDp()), strokeWidth = 2.dp, color = Color.Gray)
+                    }
+                }
+
+                resultBitmap?.let { bmp ->
+                    Spacer(Modifier.height(16.adaptiveDp()))
+                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                    Spacer(Modifier.height(16.adaptiveDp()))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.adaptiveDp())
+                            .clip(RoundedCornerShape(12.adaptiveDp()))
+                            .background(Color.Black.copy(alpha = 0.05f))
+                            .pointerInput(Unit) {
+                                detectTapGestures { showFullscreenImage = true }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            bitmap = bmp.asImageBitmap(),
+                            contentDescription = "Ergebnistabelle Vorschau",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ZoomIn,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(32.adaptiveDp())
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    val dismissFullscreen = { showFullscreenImage = false }
+
+    if (showFullscreenImage && resultBitmap != null) {
+        var scale by remember { mutableFloatStateOf(1f) }
+        var offset by remember { mutableStateOf(Offset.Zero) }
+
+        Dialog(
+            onDismissRequest = dismissFullscreen,
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false
+            )
+        ) {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { dismissFullscreen() },
+                            onDoubleTap = {
+                                if (scale > 1.1f) {
+                                    scale = 1f
+                                    offset = Offset.Zero
+                                } else {
+                                    scale = 2.5f
+                                }
+                            }
+                        )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                val containerWidth = constraints.maxWidth.toFloat()
+                val containerHeight = constraints.maxHeight.toFloat()
+                
+                // Tatsächliche Maße des Bitmaps
+                val bitmapWidth = resultBitmap!!.width.toFloat()
+                val bitmapHeight = resultBitmap!!.height.toFloat()
+                
+                // Berechnung der Maße im "Fit"-Modus
+                val scaleFit = min(containerWidth / bitmapWidth, containerHeight / bitmapHeight)
+                val displayWidth = bitmapWidth * scaleFit
+                val displayHeight = bitmapHeight * scaleFit
+
+                val state = rememberTransformableState { _, zoomChange, offsetChange, _ ->
+                    val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+                    
+                    // Maximale Grenzen für das Verschieben berechnen
+                    val maxX = max(0f, (displayWidth * newScale - containerWidth) / 2f)
+                    val maxY = max(0f, (displayHeight * newScale - containerHeight) / 2f)
+                    
+                    val newOffset = if (newScale > 1f) {
+                        (offset + offsetChange * scale)
+                    } else {
+                        Offset.Zero
+                    }
+                    
+                    scale = newScale
+                    offset = Offset(
+                        x = newOffset.x.coerceIn(-maxX, maxX),
+                        y = newOffset.y.coerceIn(-maxY, maxY)
+                    )
+                }
+
+                Image(
+                    bitmap = resultBitmap!!.asImageBitmap(),
+                    contentDescription = "Ergebnistabelle Vollbild",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offset.x,
+                            translationY = offset.y
+                        )
+                        .transformable(state = state)
+                        .padding(if (scale <= 1f) 16.adaptiveDp() else 0.dp),
+                    contentScale = ContentScale.Fit
+                )
+                
+                // Info-Text für Zoom (verschwindet wenn man zoomt)
+                if (scale <= 1.1f) {
+                    Text(
+                        text = "Pinch zum Zoomen • Doppeltipp für Schnellzoom",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 12.adaptiveSp(),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 32.adaptiveDp()),
+                        style = shadowStyle
+                    )
+                }
+                
+                IconButton(
+                    onClick = dismissFullscreen,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.adaptiveDp())
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Schließen", tint = Color.White)
+                }
+
+                // Speichern-Button in der Vollbild-Ansicht (oben links)
+                IconButton(
+                    onClick = { saveBitmapToGallery(context, resultBitmap!!) },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.adaptiveDp())
+                ) {
+                    Icon(Icons.Default.SaveAlt, contentDescription = "In Galerie speichern", tint = Color.White)
                 }
             }
         }

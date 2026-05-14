@@ -40,7 +40,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
@@ -254,7 +253,7 @@ fun SideMenuItem(
         if (badge != null) {
             Box(
                 modifier = Modifier
-                    .size(20.dp)
+                    .size(20.adaptiveDp())
                     .clip(CircleShape)
                     .background(Color.Red),
                 contentAlignment = Alignment.Center
@@ -262,8 +261,10 @@ fun SideMenuItem(
                 Text(
                     text = badge,
                     color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 11.adaptiveSp(),
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 11.adaptiveSp()
                 )
             }
         }
@@ -327,6 +328,7 @@ fun WinnerCard(
     selectedSystem: String,
     isSharing: Boolean = false,
     canAddRound: Boolean = true,
+    animateEntry: Boolean = true,
     onShare: () -> Unit = {},
     onNextRound: () -> Unit = {},
     onNewGame: () -> Unit = {}, // Umbenannt von onRestart
@@ -347,10 +349,12 @@ fun WinnerCard(
     val sortedPlayers = allPlayers.sortedBy { it.roundScores.flatten().filterNotNull().sum() }
     val winners = sortedPlayers.filter { it.roundScores.flatten().filterNotNull().sum() == sortedPlayers.first().roundScores.flatten().filterNotNull().sum() }
     val numRounds = allPlayers.firstOrNull()?.roundScores?.size ?: 1
-    val appearAnim = remember { Animatable(0f) }
+    val appearAnim = remember { Animatable(if (animateEntry) 0f else 1f) }
     var showFireworks by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        appearAnim.animateTo(1f, spring(stiffness = Spring.StiffnessLow))
+        if (animateEntry) {
+            appearAnim.animateTo(1f, spring(stiffness = Spring.StiffnessLow))
+        }
         if (!isSharing) { showFireworks = true; delay(5000); showFireworks = false }
     }
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -360,8 +364,8 @@ fun WinnerCard(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .wrapContentHeight()
-                .scale(if (isSharing) 1f else 0.8f + 0.2f * appearAnim.value)
-                .alpha(if (isSharing) 1f else appearAnim.value)
+                .scale(if (isSharing || !animateEntry) 1f else 0.8f + 0.2f * appearAnim.value)
+                .alpha(if (isSharing || !animateEntry) 1f else appearAnim.value)
                 .onGloballyPositioned { coords -> onGloballyPositioned(coords) }
                 .zIndex(1f)
                 .pointerInput(Unit) { detectTapGestures { } },

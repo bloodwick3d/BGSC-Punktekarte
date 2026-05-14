@@ -346,9 +346,9 @@ fun ImageCropScreen(
 
     val scale = remember { mutableFloatStateOf(1f) }
     val offset = remember { mutableStateOf(Offset.Zero) }
-    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+    val state = rememberTransformableState { _, zoomChange, panChange, _ ->
         scale.floatValue *= zoomChange
-        offset.value += offsetChange
+        offset.value += panChange
     }
 
     BackHandler { onDismiss() }

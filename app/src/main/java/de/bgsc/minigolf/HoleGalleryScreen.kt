@@ -353,12 +353,12 @@ fun HoleGalleryScreen(
                     var scale by remember { mutableFloatStateOf(1f) }
                     var offset by remember { mutableStateOf(Offset.Zero) }
                     var boxSize by remember { mutableStateOf(IntSize.Zero) }
-                    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+                    val state = rememberTransformableState { _, zoomChange, panChange, _ ->
                         val newScale = (scale * zoomChange).coerceIn(1f, 5f)
                         if (newScale > 1f) {
                             val maxX = (boxSize.width * (newScale - 1f)) / 2f
                             val maxY = (boxSize.height * (newScale - 1f)) / 2f
-                            offset = Offset((offset.x + offsetChange.x).coerceIn(-maxX, maxX), (offset.y + offsetChange.y).coerceIn(-maxY, maxY))
+                            offset = Offset((offset.x + panChange.x).coerceIn(-maxX, maxX), (offset.y + panChange.y).coerceIn(-maxY, maxY))
                         } else offset = Offset.Zero
                         scale = newScale
                     }

@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativePaint
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -51,7 +52,7 @@ fun Modifier.tournamentTextStyleShadow(
 ) = this.drawBehind {
     drawIntoCanvas { canvas ->
         val paint = Paint()
-        val frameworkPaint = paint.asFrameworkPaint()
+        val frameworkPaint = paint.nativePaint
         if (blurRadius > 0f) {
             frameworkPaint.maskFilter = android.graphics.BlurMaskFilter(
                 blurRadius, 
@@ -82,7 +83,7 @@ fun Modifier.roundTextStyleShadow(
 ) = this.drawBehind {
     drawIntoCanvas { canvas ->
         val paint = Paint()
-        val frameworkPaint = paint.asFrameworkPaint()
+        val frameworkPaint = paint.nativePaint
         if (blurRadius > 0f) {
             frameworkPaint.maskFilter = android.graphics.BlurMaskFilter(
                 blurRadius, 
