@@ -53,6 +53,8 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     var soundEnabled by mutableStateOf(prefs.getBoolean("sound_enabled", true))
     var fullScreenEnabled by mutableStateOf(prefs.getBoolean("full_screen_enabled", true))
     var isTurnierMode by mutableStateOf(prefs.getBoolean("turnier_mode", false))
+    var isStatsActive by mutableStateOf(prefs.getBoolean("stats_active", false))
+    var saveWithStats by mutableStateOf(false)
     var tournamentTheme by mutableStateOf(
         TournamentTheme.entries.getOrElse(prefs.getInt("tournament_theme", TournamentTheme.SYSTEM.ordinal)) { TournamentTheme.SYSTEM }
     )
@@ -149,6 +151,21 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleTurnierMode(enabled: Boolean) {
         isTurnierMode = enabled
         prefs.edit { putBoolean("turnier_mode", enabled) }
+        
+        // Wenn der Turnier-Modus komplett ausgeschaltet wird, 
+        // deaktivieren wir auch die Statistiken und die Tickbox
+        if (!enabled) {
+            toggleStatsMode(false)
+        }
+    }
+
+    fun toggleStatsMode(enabled: Boolean) {
+        isStatsActive = enabled
+        prefs.edit { putBoolean("stats_active", enabled) }
+        // Wenn der Modus global deaktiviert wird, setzen wir auch die Tickbox zurück
+        if (!enabled) {
+            saveWithStats = false
+        }
     }
 
     fun setTournamentDesign(theme: TournamentTheme) {
@@ -286,12 +303,14 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     fun restartGame() {
         players = players.map { it.copy(roundScores = listOf(List(18) { null })) }
         currentGameId = null
+        saveWithStats = false
     }
 
     fun resetAll() {
         players = listOf(Player(getApplication<Application>().getString(R.string.default_player_name, 1), Color.hsv(Random.nextFloat() * 360f, 0.8f, 0.6f)))
         currentLocation = ""
         currentGameId = null
+        saveWithStats = false
         resetTournamentNotes()
     }
 
@@ -341,7 +360,8 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
                 location = location,
                 playersJson = Converters().fromPlayerScoreList(playerScores),
                 isFullGame = isFullGame,
-                isCompleted = isCompleted
+                isCompleted = isCompleted,
+                hasStats = saveWithStats
             )
             val newId = gameRepository.insert(result)
             if (existingId == null) {

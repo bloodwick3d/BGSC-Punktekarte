@@ -1,5 +1,6 @@
 package de.bgsc.minigolf
 
+import androidx.activity.compose.BackHandler
 import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
@@ -52,6 +53,9 @@ fun TournamentScreen(
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     
+    var hasChanges by remember { mutableStateOf(false) }
+    var showExitDialog by remember { mutableStateOf(false) }
+
     var expanded by remember { mutableStateOf(false) }
     val galleryHoleIndex = remember { mutableStateOf<Int?>(null) }
     val drawingHoleInfo = remember { mutableStateOf<Pair<Int, Int>?>(null) } // holeIndex to imageIndex
@@ -65,6 +69,57 @@ fun TournamentScreen(
             blurRadius = 3f
         )
     )
+
+    val handleBack = {
+        if (hasChanges) {
+            showExitDialog = true
+        } else {
+            onBack()
+        }
+    }
+
+    BackHandler(enabled = true) {
+        handleBack()
+    }
+
+    if (showExitDialog) {
+        val buttonShape = RoundedCornerShape(20.dp)
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("Änderungen speichern?", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
+            text = { Text("Du hast ungespeicherte Änderungen. Möchtest du diese vor dem Verlassen speichern?", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
+            confirmButton = {
+                Button(
+                    onClick = golfClick {
+                        viewModel.saveTournamentNotes()
+                        Toast.makeText(context, "Notizen gespeichert", Toast.LENGTH_SHORT).show()
+                        showExitDialog = false
+                        onBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    shape = buttonShape,
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
+                ) {
+                    Text("Speichern", color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = golfClick { 
+                        showExitDialog = false
+                        onBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336)),
+                    shape = buttonShape,
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
+                ) {
+                    Text("Verwerfen", color = Color.White, style = shadowStyle.copy(color = Color.White))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -81,7 +136,7 @@ fun TournamentScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = golfClick { onBack() }) {
+                    IconButton(onClick = golfClick { handleBack() }) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
                             Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück", tint = MaterialTheme.colorScheme.onBackground)
@@ -96,6 +151,7 @@ fun TournamentScreen(
                 IconButton(onClick = golfClick {
                     viewModel.saveTournamentNotes()
                     Toast.makeText(context, "Notizen gespeichert", Toast.LENGTH_SHORT).show()
+                    hasChanges = false
                     onSaveFinished()
                 }) {
                     Box(contentAlignment = Alignment.Center) {
@@ -107,7 +163,7 @@ fun TournamentScreen(
 
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.adaptiveDp())) {
                 OutlinedTextField(
-                    value = viewModel.tournamentLocation, onValueChange = { viewModel.tournamentLocation = it },
+                    value = viewModel.tournamentLocation, onValueChange = { viewModel.tournamentLocation = it; hasChanges = true },
                     label = { Text("Ort", style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)) },
                     modifier = Modifier.fillMaxWidth(), singleLine = true, textStyle = shadowStyle.copy(color = MaterialTheme.colorScheme.onBackground),
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = MaterialTheme.colorScheme.outline, focusedTextColor = MaterialTheme.colorScheme.onBackground, unfocusedTextColor = MaterialTheme.colorScheme.onBackground, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
@@ -123,7 +179,7 @@ fun TournamentScreen(
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = MaterialTheme.colorScheme.outline, focusedTextColor = MaterialTheme.colorScheme.onBackground, unfocusedTextColor = MaterialTheme.colorScheme.onBackground, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
                     )
                     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        listOf("Miniaturgolf (Eternit)", "Minigolf (Beton)", "Filzgolf", "Cobigolf", "Sterngolf").forEach { system -> DropdownMenuItem(text = { Text(text = system) }, onClick = { viewModel.tournamentGameMode = system; expanded = false }) }
+                        listOf("Miniaturgolf (Eternit)", "Minigolf (Beton)", "Filzgolf", "Cobigolf", "Sterngolf").forEach { system -> DropdownMenuItem(text = { Text(text = system) }, onClick = { viewModel.tournamentGameMode = system; expanded = false; hasChanges = true }) }
                     }
                 }
             }
@@ -135,7 +191,10 @@ fun TournamentScreen(
                     key(index) {
                         TournamentRow(
                             holeNumber = index + 1, note = note,
-                            onUpdate = { b, s, n, imgs -> viewModel.updateTournamentNote(index, b, s, n, imgs) },
+                            onUpdate = { b, s, n, imgs -> 
+                                viewModel.updateTournamentNote(index, b, s, n, imgs)
+                                hasChanges = true
+                            },
                             onImageSelected = { uri -> croppingHoleInfo.value = index to uri },
                             onGalleryRequest = { galleryHoleIndex.value = index },
                             shadowStyle = shadowStyle
@@ -165,6 +224,7 @@ fun TournamentScreen(
                     if (imgIndex in currentImages.indices) {
                         currentImages.removeAt(imgIndex)
                         viewModel.updateTournamentNote(index, note.ball, note.startPoint, note.notes, currentImages)
+                        hasChanges = true
                     }
                 },
                 onMoveImage = { from, to ->
@@ -173,6 +233,7 @@ fun TournamentScreen(
                         val img = currentImages.removeAt(from)
                         currentImages.add(to, img)
                         viewModel.updateTournamentNote(index, note.ball, note.startPoint, note.notes, currentImages)
+                        hasChanges = true
                     }
                 }
             )
@@ -195,6 +256,7 @@ fun TournamentScreen(
                         if (path != null) {
                             updatedImages[imgIdx] = images[imgIdx].copy(imagePath = path)
                             viewModel.updateTournamentNote(holeIdx, note.ball, note.startPoint, note.notes, updatedImages)
+                            hasChanges = true
                         }
                         drawingHoleInfo.value = null
                     },
@@ -202,6 +264,7 @@ fun TournamentScreen(
                         val updatedImages = images.toMutableList()
                         updatedImages[imgIdx] = images[imgIdx].copy(imagePath = images[imgIdx].originalImagePath)
                         viewModel.updateTournamentNote(holeIdx, note.ball, note.startPoint, note.notes, updatedImages)
+                        hasChanges = true
                         drawingHoleInfo.value = null
                         Toast.makeText(context, "Zeichnungen entfernt", Toast.LENGTH_SHORT).show()
                     }
@@ -226,6 +289,7 @@ fun TournamentScreen(
                         val currentImages = note.getAllImages().toMutableList()
                         currentImages.add(HoleImage(path, path))
                         viewModel.updateTournamentNote(index, note.ball, note.startPoint, note.notes, currentImages)
+                        hasChanges = true
                     }
                     croppingHoleInfo.value = null
                 }

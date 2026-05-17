@@ -58,6 +58,9 @@ fun ScoreTable(
     highlightAmber: Color,
     highlightGold: Color,
     modifier: Modifier = Modifier,
+    isStatsActive: Boolean = false,
+    saveWithStats: Boolean = true,
+    onSaveWithStatsChange: (Boolean) -> Unit = {},
     scrollState: ScrollState = rememberScrollState()
 ) {
     val haptic = LocalHapticFeedback.current
@@ -631,7 +634,20 @@ fun ScoreTable(
                             shape = RoundedCornerShape(bottomStart = 15.adaptiveDp())
                         ).clip(RoundedCornerShape(bottomStart = 15.adaptiveDp())),
                     contentAlignment = Alignment.Center
-                ) { }
+                ) {
+                    if (isStatsActive) {
+                        Checkbox(
+                            checked = saveWithStats,
+                            onCheckedChange = { onSaveWithStatsChange(it) },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFF4CAF50),
+                                uncheckedColor = Color.White.copy(alpha = 0.6f),
+                                checkmarkColor = Color.White
+                            ),
+                            modifier = Modifier.scale(0.8f)
+                        )
+                    }
+                }
 
                 Spacer(
                     modifier = Modifier.width(2.adaptiveDp()).zIndex(2f)

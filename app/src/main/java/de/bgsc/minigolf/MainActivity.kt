@@ -357,7 +357,11 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                 onPlayerClick = { editPlayerIndex = it }, onAddPlayerClick = { showAddPlayerDialog = true },
                                 onMovePlayer = { from, to -> viewModel.movePlayer(from, to) }, onRemoveRound = { viewModel.removeRound(it) },
                                 onAddRound = { viewModel.addRound() }, shadowStyle = shadowStyle,
-                                highlightAmber = highlightAmber, highlightGold = highlightGold, modifier = Modifier.weight(1f)
+                                highlightAmber = highlightAmber, highlightGold = highlightGold,
+                                isStatsActive = viewModel.isTurnierMode && viewModel.isStatsActive,
+                                saveWithStats = viewModel.saveWithStats,
+                                onSaveWithStatsChange = { viewModel.saveWithStats = it },
+                                modifier = Modifier.weight(1f)
                             )
                         }
 

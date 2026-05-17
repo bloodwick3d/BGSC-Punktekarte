@@ -114,34 +114,60 @@ fun getScoreColor(
 
 /**
  * Teilt ein GameResult, indem es zuerst das Bitmap generiert und dann den Share-Intent startet.
+ * Falls Statistiken aktiv sind, wird auch eine Bahnstatistik generiert und geteilt.
  */
 fun shareGameResult(context: Context, result: GameResult) {
-    val bitmap = generateResultBitmap(context, result)
-    shareBitmap(context, bitmap)
+    val bitmaps = mutableListOf<Bitmap>()
+    bitmaps.add(generateResultBitmap(context, result))
+    
+    if (result.hasStats) {
+        bitmaps.add(generateTrackStatsBitmap(context, result))
+    }
+    
+    shareBitmaps(context, bitmaps)
 }
 
-fun shareBitmap(context: Context, bitmap: Bitmap) {
+fun shareBitmaps(context: Context, bitmaps: List<Bitmap>) {
     val cachePath = File(context.cacheDir, "images")
     if (!cachePath.exists()) cachePath.mkdirs()
-    val imageFile = File(cachePath, "score_table.png")
-    val stream = FileOutputStream(imageFile)
-    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-    stream.close()
     
-    // Dynamische Authority-ID nutzen (funktioniert für Debug und Release)
-    val authority = "${context.packageName}.fileprovider"
-    val contentUri: Uri = FileProvider.getUriForFile(context, authority, imageFile)
+    val uris = ArrayList<Uri>()
+    bitmaps.forEachIndexed { index, bitmap ->
+        val fileName = if (index == 0) "score_table.png" else "track_stats.png"
+        val imageFile = File(cachePath, fileName)
+        val stream = FileOutputStream(imageFile)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        stream.close()
+        
+        val authority = "${context.packageName}.fileprovider"
+        uris.add(FileProvider.getUriForFile(context, authority, imageFile))
+    }
     
     val shareIntent = Intent().apply {
-        action = Intent.ACTION_SEND
-        putExtra(Intent.EXTRA_STREAM, contentUri)
+        if (uris.size > 1) {
+            action = Intent.ACTION_SEND_MULTIPLE
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+        } else {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_STREAM, uris[0])
+        }
         type = "image/png"
-        // WICHTIG für die Vorschau:
-        clipData = ClipData.newRawUri("Ergebnis", contentUri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        
+        // ClipData für die Vorschau (funktioniert bei Multiple Intent etwas anders)
+        if (uris.isNotEmpty()) {
+            clipData = ClipData.newRawUri("Ergebnis", uris[0])
+            for (i in 1 until uris.size) {
+                clipData?.addItem(ClipData.Item(uris[i]))
+            }
+        }
     }
     
     context.startActivity(Intent.createChooser(shareIntent, "Ergebnis teilen"))
+}
+
+fun shareBitmap(context: Context, bitmap: Bitmap) {
+    shareBitmaps(context, listOf(bitmap))
 }
 
 /**

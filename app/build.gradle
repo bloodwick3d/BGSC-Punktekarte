@@ -14,8 +14,8 @@ android {
         applicationId "de.bgsc.minigolf"
         minSdk 24
         targetSdk = 36
-        versionCode 19
-        versionName "2.0.4"
+        versionCode 20
+        versionName "2.0.5"
 
         multiDexEnabled true
 

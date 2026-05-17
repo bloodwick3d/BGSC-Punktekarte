@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material3.*
 import androidx.compose.material.icons.filled.DarkMode
@@ -210,6 +211,7 @@ fun TournamentSelectionScreen(
                         )
                     }
                 }
+                
                 Spacer(Modifier.width(8.adaptiveDp()))
                 Text(
                     "Turnier-Modus",
@@ -218,6 +220,22 @@ fun TournamentSelectionScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                     style = shadowStyle.copy(color = MaterialTheme.colorScheme.onBackground)
                 )
+
+                Spacer(Modifier.weight(1f))
+
+                // Turnier-Modus deaktivieren Button nun oben rechts
+                IconButton(
+                    onClick = golfClick { showExitConfirmationState.value = true }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.PowerSettingsNew, contentDescription = null, tint = Color.Black.copy(alpha = 0.2f), modifier = Modifier.offset(1.dp, 1.dp))
+                        Icon(
+                            imageVector = Icons.Default.PowerSettingsNew,
+                            contentDescription = "Modus deaktivieren",
+                            tint = Color(0xFFF44336)
+                        )
+                    }
+                }
             }
 
             // Haupt-Karten Bereich
@@ -300,10 +318,14 @@ fun TournamentSelectionScreen(
                 )
 
                 SmallOptionButton(
-                    icon = Icons.Default.PowerSettingsNew,
-                    label = "Aus",
-                    color = Color(0xFFF44336),
-                    onClick = { showExitConfirmationState.value = true },
+                    icon = Icons.Default.BarChart,
+                    label = "Stats",
+                    color = if (viewModel.isStatsActive) Color(0xFF4CAF50) else Color(0xFFF44336),
+                    onClick = {
+                        viewModel.toggleStatsMode(!viewModel.isStatsActive)
+                        val msg = if (viewModel.isStatsActive) "Statistik-Modus aktiviert!" else "Statistik-Modus deaktiviert!"
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    },
                     shadowStyle = shadowStyle
                 )
             }

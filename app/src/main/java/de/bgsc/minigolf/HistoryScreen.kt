@@ -1,16 +1,19 @@
 package de.bgsc.minigolf
 
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
 import android.graphics.Bitmap
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -320,15 +323,18 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
     val winners = remember(sortedPlayers) { sortedPlayers.filter { it.totalScore == winnerTotal }.map { it.name } }
 
     var resultBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var statsBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isLoadingBitmap by remember { mutableStateOf(false) }
-    var showFullscreenImage by remember { mutableStateOf(false) }
+    var showFullscreenIndex by remember { mutableStateOf<Int?>(null) } // null = zu, 0 = Score, 1 = Stats
 
     LaunchedEffect(showDetails) {
         if (showDetails && resultBitmap == null) {
             isLoadingBitmap = true
             withContext(Dispatchers.IO) {
-                val bmp = generateResultBitmap(context, result)
-                resultBitmap = bmp
+                resultBitmap = generateResultBitmap(context, result)
+                if (result.hasStats) {
+                    statsBitmap = generateTrackStatsBitmap(context, result)
+                }
             }
             isLoadingBitmap = false
         }
@@ -358,6 +364,15 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
                             fontSize = 16.adaptiveSp(), 
                             style = shadowStyle.copy(color = Color.Black)
                         )
+                        if (result.hasStats) {
+                            Spacer(Modifier.width(6.adaptiveDp()))
+                            Icon(
+                                imageVector = Icons.Default.BarChart,
+                                contentDescription = "Statistik aktiv",
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(16.adaptiveDp())
+                            )
+                        }
                     }
                     if (result.location.isNotBlank()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -454,36 +469,59 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
                     Spacer(Modifier.height(16.adaptiveDp()))
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
                     Spacer(Modifier.height(16.adaptiveDp()))
-                    Box(
+                    
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.adaptiveDp())
-                            .clip(RoundedCornerShape(12.adaptiveDp()))
-                            .background(Color.Black.copy(alpha = 0.05f))
-                            .pointerInput(Unit) {
-                                detectTapGestures { showFullscreenImage = true }
-                            },
-                        contentAlignment = Alignment.Center
+                            .height(180.adaptiveDp()),
+                        horizontalArrangement = Arrangement.spacedBy(8.adaptiveDp())
                     ) {
-                        Image(
-                            bitmap = bmp.asImageBitmap(),
-                            contentDescription = "Ergebnistabelle Vorschau",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                        
+                        // Vorschau Ergebniskarte
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.2f)),
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(12.adaptiveDp()))
+                                .background(Color.Black.copy(alpha = 0.05f))
+                                .pointerInput(Unit) {
+                                    detectTapGestures { showFullscreenIndex = 0 }
+                                },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ZoomIn,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(32.adaptiveDp())
+                            Image(
+                                bitmap = bmp.asImageBitmap(),
+                                contentDescription = "Ergebniskarte",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
+                            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.ZoomIn, null, tint = Color.White, modifier = Modifier.size(24.adaptiveDp()))
+                            }
+                        }
+
+                        // Vorschau Bahnstatistik (falls vorhanden)
+                        if (result.hasStats && statsBitmap != null) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(12.adaptiveDp()))
+                                    .background(Color.Black.copy(alpha = 0.05f))
+                                    .pointerInput(Unit) {
+                                        detectTapGestures { showFullscreenIndex = 1 }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    bitmap = statsBitmap!!.asImageBitmap(),
+                                    contentDescription = "Bahnstatistik",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.BarChart, null, tint = Color.White, modifier = Modifier.size(24.adaptiveDp()))
+                                }
+                            }
                         }
                     }
                 }
@@ -491,119 +529,137 @@ fun HistoryItem(result: GameResult, shadowStyle: TextStyle) {
         }
     }
 
-    val dismissFullscreen = { showFullscreenImage = false }
-
-    if (showFullscreenImage && resultBitmap != null) {
-        var scale by remember { mutableFloatStateOf(1f) }
-        var offset by remember { mutableStateOf(Offset.Zero) }
+    if (showFullscreenIndex != null && resultBitmap != null) {
+        val bitmaps = remember(result.hasStats, resultBitmap, statsBitmap) {
+            if (result.hasStats && statsBitmap != null) listOf(resultBitmap!!, statsBitmap!!) else listOf(resultBitmap!!)
+        }
+        val pagerState = rememberPagerState(initialPage = showFullscreenIndex!!.coerceIn(0, bitmaps.size - 1), pageCount = { bitmaps.size })
+        var isAnyImageZoomed by remember { mutableStateOf(false) }
 
         Dialog(
-            onDismissRequest = dismissFullscreen,
-            properties = DialogProperties(
-                usePlatformDefaultWidth = false,
-                dismissOnBackPress = true,
-                dismissOnClickOutside = false
-            )
+            onDismissRequest = { showFullscreenIndex = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true, dismissOnClickOutside = false)
         ) {
-            BoxWithConstraints(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onTap = { dismissFullscreen() },
-                            onDoubleTap = {
-                                if (scale > 1.1f) {
-                                    scale = 1f
-                                    offset = Offset.Zero
-                                } else {
-                                    scale = 2.5f
-                                }
-                            }
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                val containerWidth = constraints.maxWidth.toFloat()
-                val containerHeight = constraints.maxHeight.toFloat()
-                
-                // Tatsächliche Maße des Bitmaps
-                val bitmapWidth = resultBitmap!!.width.toFloat()
-                val bitmapHeight = resultBitmap!!.height.toFloat()
-                
-                // Berechnung der Maße im "Fit"-Modus
-                val scaleFit = min(containerWidth / bitmapWidth, containerHeight / bitmapHeight)
-                val displayWidth = bitmapWidth * scaleFit
-                val displayHeight = bitmapHeight * scaleFit
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    userScrollEnabled = !isAnyImageZoomed,
+                    beyondViewportPageCount = 1
+                ) { page ->
+                    FullscreenImageItem(
+                        bitmap = bitmaps[page], 
+                        onDismiss = { showFullscreenIndex = null }, 
+                        context = context,
+                        onZoomChanged = { isAnyImageZoomed = it }
+                    )
+                }
 
-                val state = rememberTransformableState { _, zoomChange, offsetChange, _ ->
-                    val newScale = (scale * zoomChange).coerceIn(1f, 5f)
-                    
-                    // Maximale Grenzen für das Verschieben berechnen
-                    val maxX = max(0f, (displayWidth * newScale - containerWidth) / 2f)
-                    val maxY = max(0f, (displayHeight * newScale - containerHeight) / 2f)
-                    
-                    val newOffset = if (newScale > 1f) {
-                        (offset + offsetChange * scale)
-                    } else {
-                        Offset.Zero
+                // Pager Indicator (Punkte unten)
+                if (bitmaps.size > 1) {
+                    Row(
+                        Modifier.height(50.dp).fillMaxWidth().align(Alignment.BottomCenter),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        repeat(bitmaps.size) { iteration ->
+                            val color = if (pagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.5f)
+                            Box(modifier = Modifier.padding(4.dp).clip(CircleShape).background(color).size(8.dp))
+                        }
                     }
-                    
-                    scale = newScale
-                    offset = Offset(
-                        x = newOffset.x.coerceIn(-maxX, maxX),
-                        y = newOffset.y.coerceIn(-maxY, maxY)
-                    )
                 }
 
-                Image(
-                    bitmap = resultBitmap!!.asImageBitmap(),
-                    contentDescription = "Ergebnistabelle Vollbild",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale,
-                            translationX = offset.x,
-                            translationY = offset.y
-                        )
-                        .transformable(state = state)
-                        .padding(if (scale <= 1f) 16.adaptiveDp() else 0.dp),
-                    contentScale = ContentScale.Fit
-                )
-                
-                // Info-Text für Zoom (verschwindet wenn man zoomt)
-                if (scale <= 1.1f) {
-                    Text(
-                        text = "Pinch zum Zoomen • Doppeltipp für Schnellzoom",
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 12.adaptiveSp(),
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 32.adaptiveDp()),
-                        style = shadowStyle
-                    )
-                }
-                
+                // Schließen-Button oben rechts
                 IconButton(
-                    onClick = dismissFullscreen,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.adaptiveDp())
+                    onClick = { showFullscreenIndex = null },
+                    modifier = Modifier.align(Alignment.TopEnd).padding(16.adaptiveDp())
                 ) {
                     Icon(Icons.Default.Close, contentDescription = "Schließen", tint = Color.White)
                 }
-
-                // Speichern-Button in der Vollbild-Ansicht (oben links)
-                IconButton(
-                    onClick = { saveBitmapToGallery(context, resultBitmap!!) },
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(16.adaptiveDp())
-                ) {
-                    Icon(Icons.Default.SaveAlt, contentDescription = "In Galerie speichern", tint = Color.White)
-                }
             }
+        }
+    }
+}
+
+@Composable
+fun FullscreenImageItem(
+    bitmap: Bitmap, 
+    onDismiss: () -> Unit, 
+    context: android.content.Context,
+    onZoomChanged: (Boolean) -> Unit
+) {
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
+    val state = rememberTransformableState { _, zoomChange, offsetChange, _ ->
+        val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+        scale = newScale
+        onZoomChanged(newScale > 1.05f)
+        if (newScale > 1f) {
+            offset += offsetChange * scale
+        } else {
+            offset = Offset.Zero
+        }
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        // Berechnung der Grenzen für das Verschieben (Panning)
+        val containerWidth = constraints.maxWidth.toFloat()
+        val containerHeight = constraints.maxHeight.toFloat()
+        val bitmapWidth = bitmap.width.toFloat()
+        val bitmapHeight = bitmap.height.toFloat()
+        
+        val scaleFit = min(containerWidth / bitmapWidth, containerHeight / bitmapHeight)
+        val displayWidth = bitmapWidth * scaleFit
+        val displayHeight = bitmapHeight * scaleFit
+
+        // Effektive Grenzen für den Offset berechnen
+        val maxX = max(0f, (displayWidth * scale - containerWidth) / 2f)
+        val maxY = max(0f, (displayHeight * scale - containerHeight) / 2f)
+        
+        val boundedOffset = Offset(
+            x = offset.x.coerceIn(-maxX, maxX),
+            y = offset.y.coerceIn(-maxY, maxY)
+        )
+
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = boundedOffset.x
+                    translationY = boundedOffset.y
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onDismiss() },
+                        onDoubleTap = {
+                            if (scale > 1.1f) {
+                                scale = 1f
+                                offset = Offset.Zero
+                                onZoomChanged(false)
+                            } else {
+                                scale = 2.5f
+                                onZoomChanged(true)
+                            }
+                        }
+                    )
+                }
+                .then(if (scale > 1f) Modifier.transformable(state = state) else Modifier),
+            contentScale = ContentScale.Fit
+        )
+
+        // Speichern-Button oben links
+        IconButton(
+            onClick = { saveBitmapToGallery(context, bitmap) },
+            modifier = Modifier.align(Alignment.TopStart).padding(16.adaptiveDp())
+        ) {
+            Icon(Icons.Default.SaveAlt, contentDescription = "In Galerie speichern", tint = Color.White)
         }
     }
 }
