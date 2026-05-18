@@ -118,7 +118,7 @@ fun NavigationDrawer(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.bgsc_logo),
+                                painter = painterResource(id = R.drawable.minigolf_logo),
                                 contentDescription = null,
                                 modifier = Modifier.size(40.adaptiveDp())
                             )

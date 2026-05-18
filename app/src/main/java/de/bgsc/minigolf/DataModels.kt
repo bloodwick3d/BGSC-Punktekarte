@@ -32,7 +32,7 @@ data class HoleNote(
 
 data class TournamentExportWrapper(
     @SerializedName("version") val version: Int = 1,
-    @SerializedName("appIdentifier") val appIdentifier: String = "BGSC_Punktekarte",
+    @SerializedName("appIdentifier") val appIdentifier: String = "MiniGolf_Punktekarte",
     @SerializedName("exportDate") val exportDate: Long = System.currentTimeMillis(),
     @SerializedName("notes") val notes: List<TournamentNoteResult>
 )

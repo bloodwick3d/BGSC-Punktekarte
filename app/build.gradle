@@ -14,8 +14,8 @@ android {
         applicationId "de.bgsc.minigolf"
         minSdk 24
         targetSdk = 36
-        versionCode 20
-        versionName "2.0.5"
+        versionCode 21
+        versionName "2.1.0"
 
         multiDexEnabled true
 
@@ -94,8 +94,8 @@ androidComponents {
         variant.outputs.each { output ->
             def versionName = android.defaultConfig.versionName
             def name = (variant.name == "release") ? 
-                "BGSC Punktekarte v${versionName}.apk" : 
-                "BGSC Punktekarte v${versionName}-debug.apk"
+                "MiniGolf Punktekarte v${versionName}.apk" : 
+                "MiniGolf Punktekarte v${versionName}-debug.apk"
             output.outputFileName.set(name)
         }
     }

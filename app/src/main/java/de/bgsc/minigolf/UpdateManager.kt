@@ -31,7 +31,7 @@ sealed class UpdateResult {
 
 class UpdateManager(private val context: Context) {
     private val client = OkHttpClient()
-    private val repoUrl = "https://api.github.com/repos/bloodwick3d/BGSC-Punktekarte/releases/latest"
+    private val repoUrl = "https://api.github.com/repos/bloodwick3d/Minigolf-Punktekarte/releases/latest"
 
     suspend fun checkForUpdates(currentVersion: String): UpdateResult = withContext(Dispatchers.IO) {
         val request = Request.Builder()

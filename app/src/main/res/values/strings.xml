@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">BGSC Punktekarte</string>
+    <string name="app_name">MiniGolf Punktekarte</string>
 
     <!-- Navigation & Menu -->
     <string name="menu_add_player">Spieler hinzufügen</string>
@@ -120,8 +120,8 @@
     <string name="top_bar_logo_desc">Logo</string>
 
     <!-- Navigation Drawer -->
-    <string name="drawer_club_name">BGSC \"Gut Schlag\"\nGladbeck e.V.</string>
-    <string name="drawer_copyright">© BGSC \"Gut Schlag\" Gladbeck e.V.</string>
+    <string name="drawer_club_name">MiniGolf\nPunktekarte</string>
+    <string name="drawer_copyright">© MiniGolf Punktekarte</string>
     <string name="drawer_credits">Created by Patrick</string>
 
     <!-- Error Messages -->
@@ -150,10 +150,10 @@
     <!-- Info Dialog -->
     <string name="info_title">App-Info</string>
     <string name="info_version">App-Version: %1$s</string>
-    <string name="info_developer">Entwickelt für den BGSC Castrop</string>
+    <string name="info_developer">Entwickelt für Minigolf-Begeisterte</string>
     <string name="info_copyright">© 2025</string>
     <string name="info_imprint_title">Impressum</string>
-    <string name="info_imprint_content">Angaben gemäß § 5 DDG\n\nBGSC \"Gut Schlag\" Gladbeck e.V.\nBohmertstraße 283\n45964 Gladbeck\n\nVertreten durch den Vorstand:\n1. Vorsitzender: \n2. Vorsitzender: \n\nKontakt:\nAnsprechpartner: Patrick Kempken\nE-Mail: bloodwick3d@gmail.com\nTelefon: \n\nRegistereintrag:\nEintragung im Vereinsregister.\nRegistergericht: \nRegisternummer: \n\nVerantwortlich für den Inhalt nach § 18 Abs. 2 MStV:\nPatrick Kempken</string>
+    <string name="info_imprint_content">Angaben gemäß § 5 DDG\n\nMiniGolf Punktekarte\n\nKontakt:\nE-Mail: bloodwick3d@gmail.com\n\nVerantwortlich für den Inhalt nach § 18 Abs. 2 MStV:\nPatrick Kempken</string>
     <string name="info_privacy_title">Datenschutz</string>
     <string name="info_privacy_content">Diese App arbeitet lokal. Alle Spielstände und Notizen werden ausschließlich auf deinem Gerät gespeichert. Es werden keine persönlichen Daten erfasst, analysiert oder an Dritte weitergegeben. Lediglich beim Prüfen auf Updates wird eine Verbindung zu GitHub hergestellt, um die neueste Version zu finden.</string>
     <string name="info_licenses_title">Lizenzen &amp; Open Source</string>

@@ -112,11 +112,11 @@ fun generateBitmapFromData(
         val logoCenterX = sidePadding + logoColumnWidth / 2f
         val tableCenterY = headerTextHeight + tableHeaderHeight + (11 * rowHeight)
         textPaint.color = Color.WHITE; textPaint.textSize = 21f * scale; textPaint.typeface = calibriBold; textPaint.isFakeBoldText = true; textPaint.textAlign = Paint.Align.CENTER
-        withRotation(-90f, logoCenterX, tableCenterY) { drawText("BGSC \"Gut Schlag\" Gladbeck e.V.", logoCenterX, tableCenterY + (textPaint.textSize / 3f), textPaint) }
+        withRotation(-90f, logoCenterX, tableCenterY) { drawText("MiniGolf Punktekarte", logoCenterX, tableCenterY + (textPaint.textSize / 3f), textPaint) }
 
         // Logo unten links hinzufügen
         try {
-            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.bgsc_logo)
+            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.minigolf_logo)
             if (logoBitmap != null) {
                 val logoSize = logoColumnWidth * 0.8f
                 val logoX = sidePadding + (logoColumnWidth - logoSize) / 2f
@@ -471,7 +471,7 @@ fun generateTrackStatsBitmap(
 
         // Logo-Hinweis unten rechts
         textPaint.textAlign = Paint.Align.RIGHT; textPaint.textSize = 8f * scale; textPaint.color = Color.LTGRAY; textPaint.typeface = calibriNormal
-        drawText("BGSC \"Gut Schlag\" Gladbeck e.V.", totalWidth - sidePadding, totalHeight - 5f * scale, textPaint)
+        drawText("MiniGolf Punktekarte", totalWidth - sidePadding, totalHeight - 5f * scale, textPaint)
     }
 
     return bitmap

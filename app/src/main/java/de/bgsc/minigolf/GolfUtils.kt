@@ -23,7 +23,7 @@ import java.util.zip.GZIPOutputStream
  * Speichert ein Bitmap in der Handy-Galerie (Bilder-Ordner).
  */
 fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
-    val filename = "BGSC_Ergebnis_${System.currentTimeMillis()}.png"
+    val filename = "MiniGolf_Ergebnis_${System.currentTimeMillis()}.png"
     val fos: java.io.OutputStream?
     
     try {
@@ -32,7 +32,7 @@ fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
                 put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/BGSC_Punktekarte")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/MiniGolf_Punktekarte")
             }
             val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
             fos = imageUri?.let { resolver.openOutputStream(it) }
@@ -171,7 +171,7 @@ fun shareBitmap(context: Context, bitmap: Bitmap) {
 }
 
 /**
- * Exportiert eine einzelne Turniernotiz als .bgsc Datei und teilt sie.
+ * Exportiert eine einzelne Turniernotiz als .mgpk Datei und teilt sie.
  * Jetzt inklusive eingebetteter Bilddaten.
  */
 fun shareTournamentNote(context: Context, result: TournamentNoteResult) {
@@ -212,7 +212,7 @@ fun shareTournamentNote(context: Context, result: TournamentNoteResult) {
             .replace(Regex("_+"), "_")
             .trim('_')
 
-        val fileName = "${safeLocation}_${safeSystem}.bgsc"
+        val fileName = "${safeLocation}_${safeSystem}.mgpk"
 
         val file = File(cachePath, fileName)
         FileOutputStream(file).use { fos ->

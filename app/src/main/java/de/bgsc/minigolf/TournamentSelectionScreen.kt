@@ -122,7 +122,7 @@ fun TournamentSelectionScreen(
         )
     )
 
-    // Launcher für Export (.bgsc Format)
+    // Launcher für Export (.mgpk Format)
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri ->
@@ -134,7 +134,7 @@ fun TournamentSelectionScreen(
         }
     }
 
-    // Launcher für Import (.bgsc Format)
+    // Launcher für Import (.mgpk Format)
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -303,7 +303,7 @@ fun TournamentSelectionScreen(
                     color = Color(0xFFFF9800),
                     onClick = {
                         val timeStamp = SimpleDateFormat("ddMMyyyy_HHmm", Locale.getDefault()).format(Date())
-                        val fileName = "BGSC_Turniernotizen_$timeStamp.bgsc"
+                        val fileName = "MiniGolf_Turniernotizen_$timeStamp.mgpk"
                         exportLauncher.launch(fileName)
                     },
                     shadowStyle = shadowStyle

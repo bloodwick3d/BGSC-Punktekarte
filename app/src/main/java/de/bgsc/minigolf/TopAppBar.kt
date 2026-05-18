@@ -74,7 +74,7 @@ fun TopAppBar(
                 label = "logoScale"
             )
             Image(
-                painter = painterResource(id = R.drawable.bgsc_logo),
+                painter = painterResource(id = R.drawable.minigolf_logo),
                 contentDescription = "Logo",
                 modifier = Modifier
                     .size(logoSize)

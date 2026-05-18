@@ -487,7 +487,7 @@ fun WinnerCard(
                             }
                             Spacer(Modifier.width(8.dp)); Text("Spiel beenden", style = shadowStyle)
                         }
-                    } else { Spacer(Modifier.height(16.adaptiveDp())); Image(painterResource(R.drawable.bgsc_logo), null, Modifier.size(60.adaptiveDp())) }
+                    } else { Spacer(Modifier.height(16.adaptiveDp())); Image(painterResource(R.drawable.minigolf_logo), null, Modifier.size(60.adaptiveDp())) }
                 }
             }
         }

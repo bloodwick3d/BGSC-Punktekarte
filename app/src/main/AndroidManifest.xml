@@ -7,7 +7,7 @@
         tools:ignore="SelfUpdates,ProtectedPermissions" />
 
     <application
-        android:label="BGSC Punktekarte"
+        android:label="MiniGolf Punktekarte"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Theme.MiniGolf">
@@ -22,7 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Filter 1: Für Dateimanager (reagiert auf die Endung .bgsc) -->
+            <!-- Filter 1: Für Dateimanager (reagiert auf .mgpk und .bgsc) -->
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -30,6 +30,10 @@
                 <data android:scheme="content" />
                 <data android:scheme="file" />
                 <data android:host="*" />
+                <data android:pathPattern=".*\\.mgpk" />
+                <data android:pathPattern=".*\\..*\\.mgpk" />
+                <data android:pathPattern=".*\\..*\\..*\\.mgpk" />
+                <data android:pathSuffix=".mgpk" tools:targetApi="s" />
                 <data android:pathPattern=".*\\.bgsc" />
                 <data android:pathPattern=".*\\..*\\.bgsc" />
                 <data android:pathPattern=".*\\..*\\..*\\.bgsc" />
@@ -46,6 +50,7 @@
                 <data android:host="*" />
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="application/x-binary" />
+                <data android:mimeType="application/mgpk" />
                 <data android:mimeType="application/bgsc" />
             </intent-filter>
         </activity>
