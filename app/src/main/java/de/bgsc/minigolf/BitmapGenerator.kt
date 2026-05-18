@@ -85,10 +85,10 @@ fun generateBitmapFromData(
         val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(date))
         textPaint.color = Color.LTGRAY; textPaint.textSize = 8f * scale; textPaint.typeface = calibriNormal; textPaint.textAlign = Paint.Align.LEFT
         
-        // Icons für Datum und Uhrzeit zeichnen (jetzt linksbündig mit der Tabelle)
+        // Icons für Datum und Uhrzeit zeichnen (wieder ganz links)
         try {
             val iconSize = 10f * scale
-            val iconX = tableLeft + 5f * scale
+            val iconX = sidePadding + 5f * scale
             context.getDrawable(R.drawable.ic_calendar)?.apply {
                 setBounds(iconX.toInt(), (20f * scale - iconSize).toInt(), (iconX + iconSize).toInt(), (20f * scale).toInt())
                 setTint(Color.LTGRAY)
@@ -101,8 +101,8 @@ fun generateBitmapFromData(
             }
         } catch (_: Exception) {}
 
-        drawText(dateStr, tableLeft + 5f * scale + 14f * scale, 20f * scale, textPaint)
-        drawText(timeStr, tableLeft + 5f * scale + 14f * scale, 35f * scale, textPaint)
+        drawText(dateStr, sidePadding + 5f * scale + 14f * scale, 20f * scale, textPaint)
+        drawText(timeStr, sidePadding + 5f * scale + 14f * scale, 35f * scale, textPaint)
         
         textPaint.color = Color.WHITE; textPaint.textSize = 10f * scale; textPaint.typeface = calibriBold
         val systemText = system.replace("\n", " ")
@@ -110,7 +110,7 @@ fun generateBitmapFromData(
         if (location.isNotBlank()) drawText(location, tableRight - textPaint.measureText(location), 40f * scale, textPaint)
 
         val logoCenterX = sidePadding + logoColumnWidth / 2f
-        val tableCenterY = headerTextHeight + tableHeaderHeight + (11 * rowHeight)
+        val tableCenterY = headerTextHeight + tableHeaderHeight + (12.2f * rowHeight)
         textPaint.color = Color.WHITE; textPaint.textSize = 21f * scale; textPaint.typeface = calibriBold; textPaint.isFakeBoldText = true; textPaint.textAlign = Paint.Align.CENTER
         withRotation(-90f, logoCenterX, tableCenterY) { drawText("MiniGolf Punktekarte", logoCenterX, tableCenterY + (textPaint.textSize / 3f), textPaint) }
 
@@ -120,7 +120,7 @@ fun generateBitmapFromData(
             if (logoBitmap != null) {
                 val logoSize = logoColumnWidth * 0.8f
                 val logoX = sidePadding + (logoColumnWidth - logoSize) / 2f
-                val logoY = tableBottom - logoSize - 5f * scale
+                val logoY = tableBottom - logoSize - 7f * scale
                 drawBitmap(logoBitmap, null, RectF(logoX, logoY, logoX + logoSize, logoY + logoSize), paint)
             }
         } catch (_: Exception) {}

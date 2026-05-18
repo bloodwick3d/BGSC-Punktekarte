@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -36,11 +37,14 @@ fun AppSettingsDialog(
     soundEnabled: Boolean,
     keepScreenOn: Boolean,
     fullScreenEnabled: Boolean,
+    customBackgroundUri: String?,
     shadowStyle: TextStyle,
     onHapticToggle: (Boolean) -> Unit,
     onSoundToggle: (Boolean) -> Unit,
     onKeepScreenOnToggle: (Boolean) -> Unit,
     onFullScreenToggle: (Boolean) -> Unit,
+    onSelectBackground: () -> Unit,
+    onResetBackground: () -> Unit,
     onDismiss: () -> Unit,
     onShowInfo: () -> Unit
 ) {
@@ -114,6 +118,13 @@ fun AppSettingsDialog(
                     text = stringResource(R.string.settings_full_screen),
                     checked = fullScreenEnabled,
                     onCheckedChange = { onFullScreenToggle(it) },
+                    shadowStyle = shadowStyle
+                )
+                
+                SettingsBackgroundRow(
+                    customBackgroundUri = customBackgroundUri,
+                    onSelect = onSelectBackground,
+                    onReset = onResetBackground,
                     shadowStyle = shadowStyle
                 )
             }
@@ -282,5 +293,80 @@ private fun SettingsSwitchRow(
             ),
             modifier = Modifier.scale(0.8f)
         )
+    }
+}
+
+@Composable
+private fun SettingsBackgroundRow(
+    customBackgroundUri: String?,
+    onSelect: () -> Unit,
+    onReset: () -> Unit,
+    shadowStyle: TextStyle
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.Black.copy(alpha = 0.05f))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Erste Reihe: Icon und Label
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.Photo,
+                    contentDescription = null,
+                    tint = Color.Black.copy(alpha = 0.2f),
+                    modifier = Modifier.size(24.dp).offset(1.dp, 1.dp)
+                )
+                Icon(Icons.Default.Photo, contentDescription = null, tint = Color.Black, modifier = Modifier.size(24.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Text(
+                stringResource(R.string.settings_custom_background),
+                style = shadowStyle.copy(color = Color.Black, fontWeight = FontWeight.Medium),
+                fontSize = 16.sp
+            )
+        }
+
+        // Zweite Reihe: Buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (customBackgroundUri != null) {
+                // Zurücksetzen Button
+                Button(
+                    onClick = golfClick { onReset() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f).height(36.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.settings_bg_reset),
+                        style = shadowStyle.copy(color = Color.Red.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                        maxLines = 1
+                    )
+                }
+            }
+
+            // Bild wählen Button
+            Button(
+                onClick = golfClick { onSelect() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD54F).copy(alpha = 0.8f)),
+                contentPadding = PaddingValues(horizontal = 4.dp),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.weight(1f).height(36.dp)
+            ) {
+                Text(
+                    stringResource(R.string.settings_bg_select),
+                    style = shadowStyle.copy(color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1
+                )
+            }
+        }
     }
 }

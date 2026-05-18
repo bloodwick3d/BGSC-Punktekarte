@@ -4,6 +4,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -91,6 +93,9 @@ fun TopAppBar(
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .clip(RoundedCornerShape(8.adaptiveDp()))
+                    .background(Color.Black.copy(alpha = 0.2f))
+                    .padding(horizontal = 8.adaptiveDp(), vertical = 4.adaptiveDp())
                     .golfClickable {
                         // Fokus wird nur gesetzt, wenn man explizit klickt
                     }

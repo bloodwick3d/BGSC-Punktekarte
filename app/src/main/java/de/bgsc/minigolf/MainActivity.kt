@@ -10,8 +10,11 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -54,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.lerp
+import coil.compose.AsyncImage
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -271,10 +275,28 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
     var showSideMenu by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
+    var showBackgroundEdit by remember { mutableStateOf(false) }
+    var tempEditPath by remember { mutableStateOf<String?>(null) }
     var flyingScore by remember { mutableStateOf<FlyingScoreInfo?>(null) }
     var isBadgeTransitioning by remember { mutableStateOf(false) }
 
     val activeGames by viewModel.activeGames.collectAsState()
+
+    val pickMedia = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            showSettingsDialog = false // Einstellungen sofort schließen
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val bytes = inputStream.readBytes()
+                val path = viewModel.saveByteArrayToInternalStorage(bytes, "temp_pick_")
+                if (path != null) {
+                    tempEditPath = path
+                    showBackgroundEdit = true
+                }
+            }
+        }
+    }
 
     if (viewModel.currentScreen != Screen.Main || showSideMenu || showWinnerDialog || isBadgeTransitioning) {
         BackHandler { 
@@ -335,7 +357,21 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
             }) {
                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
-                        Image(painter = painterResource(id = R.drawable.bg_minigolf), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        if (viewModel.customBackgroundUri != null) {
+                            AsyncImage(
+                                model = viewModel.customBackgroundUri,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.bg_minigolf),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                         
                         Column(
                             modifier = Modifier
@@ -535,13 +571,36 @@ fun MiniGolfApp(viewModel: GolfViewModel) {
                                 soundEnabled = viewModel.soundEnabled,
                                 keepScreenOn = viewModel.keepScreenOn,
                                 fullScreenEnabled = viewModel.fullScreenEnabled,
+                                customBackgroundUri = viewModel.customBackgroundUri,
                                 shadowStyle = shadowStyle,
                                 onHapticToggle = { viewModel.toggleHaptic(it) },
                                 onSoundToggle = { viewModel.toggleSound(it) },
                                 onKeepScreenOnToggle = { viewModel.toggleKeepScreenOn(it) },
                                 onFullScreenToggle = { viewModel.toggleFullScreen(it) },
+                                onSelectBackground = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                                onResetBackground = { viewModel.setCustomBackground(null) },
                                 onDismiss = { showSettingsDialog = false },
                                 onShowInfo = { showSettingsDialog = false; showInfoDialog = true }
+                            )
+                        }
+                        if (showBackgroundEdit && (tempEditPath != null || viewModel.customBackgroundUri != null)) {
+                            BackgroundImageEditScreen(
+                                imagePath = tempEditPath ?: viewModel.customBackgroundUri!!,
+                                fullScreenEnabled = viewModel.fullScreenEnabled,
+                                onDismiss = { 
+                                    showBackgroundEdit = false
+                                    tempEditPath = null 
+                                    showSettingsDialog = true 
+                                },
+                                onSave = { data ->
+                                    val path = viewModel.saveByteArrayToInternalStorage(data, "bg_custom_")
+                                    if (path != null) {
+                                        viewModel.setCustomBackground(path)
+                                    }
+                                    showBackgroundEdit = false
+                                    tempEditPath = null
+                                    showSettingsDialog = true
+                                }
                             )
                         }
                         if (showInfoDialog) {

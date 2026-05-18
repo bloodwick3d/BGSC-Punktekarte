@@ -33,6 +33,10 @@
     <string name="settings_sound">Touch-Sound</string>
     <string name="settings_keep_screen_on">Wachbleiben</string>
     <string name="settings_full_screen">Vollbildmodus</string>
+    <string name="settings_custom_background">Hintergrundbild</string>
+    <string name="settings_bg_select">Bild wählen</string>
+    <string name="settings_bg_reset">Zurücksetzen</string>
+    <string name="settings_bg_edit">Bearbeiten</string>
     <string name="settings_language">Sprache</string>
     <string name="settings_btn_done">Fertig</string>
 
@@ -170,4 +174,12 @@
     <!-- Footer Begriffe -->
     <string name="drawer_created_by">Created by Patrick</string>
     <string name="settings_icon_desc">Einstellungen</string>
+
+    <!-- Image Edit Screen -->
+    <string name="image_edit_title">Hintergrund anpassen</string>
+    <string name="image_edit_brightness">Helligkeit</string>
+    <string name="image_edit_contrast">Kontrast</string>
+    <string name="image_edit_saturation">Sättigung</string>
+    <string name="image_edit_blur">Unschärfe</string>
+    <string name="image_edit_save">Übernehmen</string>
 </resources>

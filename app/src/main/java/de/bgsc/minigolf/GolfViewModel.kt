@@ -55,6 +55,7 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
     var isTurnierMode by mutableStateOf(prefs.getBoolean("turnier_mode", false))
     var isStatsActive by mutableStateOf(prefs.getBoolean("stats_active", false))
     var saveWithStats by mutableStateOf(false)
+    var customBackgroundUri by mutableStateOf(prefs.getString("custom_background_uri", null))
     var tournamentTheme by mutableStateOf(
         TournamentTheme.entries.getOrElse(prefs.getInt("tournament_theme", TournamentTheme.SYSTEM.ordinal)) { TournamentTheme.SYSTEM }
     )
@@ -166,6 +167,11 @@ class GolfViewModel(application: Application) : AndroidViewModel(application) {
         if (!enabled) {
             saveWithStats = false
         }
+    }
+
+    fun setCustomBackground(uri: String?) {
+        customBackgroundUri = uri
+        prefs.edit { putString("custom_background_uri", uri) }
     }
 
     fun setTournamentDesign(theme: TournamentTheme) {
