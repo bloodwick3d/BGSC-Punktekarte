@@ -39,23 +39,26 @@ android {
     }
 
     buildTypes {
+        debug {
+            minifyEnabled false
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+            resValue "string", "app_name", "MiniGolf PWA Test"
+        }
+        
         release {
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-        
-        debug {
-            minifyEnabled false
-            applicationIdSuffix ".debug"
-            versionNameSuffix "-debug"
+            resValue "string", "app_name", "MiniGolf Punktekarte"
         }
     }
 
     buildFeatures {
         compose true
         buildConfig true
+        resValues true
     }
 
     sourceSets {
@@ -110,6 +113,7 @@ dependencies {
 
     implementation libs.androidx.core.ktx
     implementation libs.androidx.activity.compose
+    implementation libs.androidx.webkit
     implementation libs.androidx.compose.ui
     implementation libs.androidx.compose.ui.graphics
     implementation libs.androidx.compose.ui.tooling.preview

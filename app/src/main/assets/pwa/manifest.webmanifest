@@ -1,0 +1,12 @@
+{
+  "name": "MiniGolf Punktekarte",
+  "short_name": "MiniGolf",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b160d",
+  "theme_color": "#0b160d",
+  "icons": [
+    {"src":"assets/minigolf_logo_192.png","sizes":"192x192","type":"image/png"},
+    {"src":"assets/minigolf_logo_512.png","sizes":"512x512","type":"image/png"}
+  ]
+}

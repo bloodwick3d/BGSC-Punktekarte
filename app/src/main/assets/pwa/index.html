@@ -1,0 +1,2670 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<title>MiniGolf Punktekarte PWA v84</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--sticky:35px;--gap:2px;--sidepad:10px;--player-w:calc((100vw - (var(--sticky) + var(--sidepad)*2))/3.2);--amber:#ffb300;--gold:#ffd54f;--green:#4caf50;--red:#f44336;--blue:#2196f3;--blackA4:rgba(0,0,0,.40);--blackA3:rgba(0,0,0,.30);--shadow:2px 2px 3px rgba(0,0,0,.55)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;-ms-user-select:none;-webkit-user-drag:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a120b;font-family:Calibri,Arial,sans-serif}button,input{font-family:inherit}input,textarea{user-select:text;-webkit-user-select:text}.bg{position:fixed;inset:0;background:url('assets/bg_minigolf.jpg') center/cover no-repeat}.app{position:relative;width:100%;height:100dvh;overflow:hidden;color:#fff;text-shadow:var(--shadow);display:flex;flex-direction:column}.mainLayer{position:absolute;inset:0;display:flex;flex-direction:column;transition:filter .28s ease}.mainLayer.blurred{filter:blur(12px)}.scrim{position:fixed;inset:0;background:rgba(0,0,0,.30);z-index:20;opacity:0;pointer-events:none;transition:opacity .22s ease}.scrim.show{opacity:1;pointer-events:auto}
+.topbar{height:8dvh;min-height:58px;max-height:86px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex:0 0 auto}.top-left{display:flex;align-items:center;min-width:0;flex:1}.logo{width:5.6dvh;height:5.6dvh;min-width:44px;min-height:44px;max-width:64px;max-height:64px;object-fit:contain;filter:drop-shadow(2px 3px 3px rgba(0,0,0,.45));animation:logoPulse 2s linear infinite alternate;cursor:pointer}.locationBox{margin-left:12px;min-width:118px;max-width:265px;flex:1;height:28px;border-radius:8px;background:rgba(0,0,0,.20);display:flex;align-items:center;padding:0 8px;color:rgba(255,255,255,.54);font-weight:700;overflow:hidden}.pin{font-size:16px;line-height:1;margin-right:5px;opacity:.75;filter:drop-shadow(1px 1px 1px rgba(0,0,0,.4))}.locationBox input{width:100%;height:100%;border:0;outline:0;background:transparent;color:white;font-weight:700;font-size:16px;text-shadow:var(--shadow);padding:0}.locationBox input::placeholder{color:rgba(255,255,255,.56)}.systemBox{padding-left:10px;display:flex;align-items:center;justify-content:flex-end;white-space:pre-line;text-align:right;font-weight:700;font-size:20px;line-height:1.08;cursor:pointer}.systemBox::after{content:'▼';font-size:18px;margin-left:7px;text-shadow:var(--shadow)}
+.scoreArea{flex:1;min-height:0;padding:0 var(--sidepad) 10px var(--sidepad);display:flex}.scoreViewport{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}.scoreViewport::-webkit-scrollbar{display:none}.scoreContent{height:100%;width:max-content;min-width:max-content;margin:0 auto;display:flex;flex-direction:column}.scoreRow{display:flex;width:max-content}.scoreHeader{flex:1 1 0}.scoreBody{flex:18 1 0;min-height:0;display:flex;flex-direction:column}.holeRow{flex:1 1 0}.scoreSpacer{height:2px;min-height:2px}.scoreFooter{flex:var(--footer-factor,1) 1 0}.cell{height:100%;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}.leftCell{width:var(--sticky);min-width:var(--sticky);z-index:8;position:sticky;left:0;font-weight:700;order:-999}.leftCell.black{background:var(--blackA4)}.leftCell.black2{background:var(--blackA3)}.leftCell.current{background:var(--amber);color:#111;text-shadow:none}.leftTop{border-top-left-radius:15px}.leftBottom{border-bottom-left-radius:15px}.rightSide{width:var(--sticky);min-width:var(--sticky);margin-left:var(--gap);background:var(--blackA4);z-index:1;order:999}.rightTop{border-top-right-radius:15px}.rightBottom{border-bottom-right-radius:15px}.roundRefresh{position:absolute;font-size:25px;color:rgba(255,255,255,.35);text-shadow:2px 2px 0 rgba(0,0,0,.28);line-height:1}.roundNum{position:relative;font-weight:700;font-size:21px}.plusIcon{font-size:30px;font-weight:400;line-height:1;color:white;text-shadow:var(--shadow)}.playerCol{width:var(--player-w);min-width:var(--player-w);height:100%;margin-left:var(--gap);display:flex;position:relative}.nameCell{background:var(--pcolor);color:white;text-shadow:var(--shadow);font-weight:700;font-size:20px;white-space:nowrap;text-align:center;padding:0 5px;cursor:pointer}.nameCell span{display:block;overflow:hidden;text-overflow:ellipsis}.scoreCell{background:#fff;color:#000;text-shadow:var(--shadow);font-weight:700;font-size:20px;border:.5px solid rgba(211,211,211,.20);cursor:pointer}.scoreCell.odd{background:color-mix(in srgb, #fff 90%, var(--pcolor) 10%)}.scoreCell.even{background:color-mix(in srgb, #fff 80%, var(--pcolor) 20%)}.scoreCell.current{background:var(--amber)!important;text-shadow:var(--shadow)}.scoreCell.selected{border:3px solid var(--gold)}.roundShadow{filter:grayscale(.42);box-shadow:inset 0 0 0 999px rgba(90,90,90,.18)}.scoreCell.roundShadow{cursor:default}.scoreCell.roundShadow:active{box-shadow:inset 0 0 0 999px rgba(90,90,90,.26)}.footerCol{width:var(--player-w);min-width:var(--player-w);height:100%;margin-left:var(--gap);display:flex;flex-direction:column}.footerSingle{background:color-mix(in srgb,#fff 90%,var(--pcolor) 10%);color:#000;text-shadow:var(--shadow);font-weight:700;font-size:23px}.roundTotals{display:flex;flex:1}.roundTotalCell{background:color-mix(in srgb,#fff 90%,var(--pcolor) 10%);border:.5px solid rgba(211,211,211,.22);font-weight:700;font-size:14px;text-shadow:var(--shadow)}.roundTotalCell.roundShadow{background:color-mix(in srgb,#fff 90%,var(--pcolor) 10%)}.footerDivider{height:.5px;background:rgba(211,211,211,.22)}.grandTotal{flex:1;background:color-mix(in srgb,#fff 90%,var(--pcolor) 10%);font-weight:700;font-size:20px;text-shadow:var(--shadow)}.statsCheck{width:18px;height:18px;border:2px solid rgba(255,255,255,.65);border-radius:2px}.scoreColorBlue{color:var(--blue)}.scoreColorGreen{color:var(--green)}.scoreColorRed{color:var(--red)}.scoreColorBlack{color:#000}.scoreColorWhite{color:#fff}
+
+#roundHeader{cursor:grab;touch-action:none;user-select:none}#roundHeader:active{cursor:grabbing}.scoreCell{user-select:none}.systemMenu{position:fixed;z-index:65;background:#fff;color:#000;text-shadow:var(--shadow);border-radius:4px;min-width:210px;padding:10px 0;box-shadow:0 5px 12px rgba(0,0,0,.25);font-size:18px;line-height:1.12}.systemItem{min-height:52px;display:flex;align-items:center;padding:6px 16px;white-space:pre-line;cursor:pointer}.systemItem.active{font-weight:700;background:rgba(255,213,79,.35)}.systemItem:active{background:rgba(0,0,0,.08)}.historyList{max-height:58dvh;overflow:auto;margin-top:4px}.historyItem{background:rgba(255,255,255,.32);border-radius:13px;padding:12px;margin:8px 0;color:#000;text-shadow:var(--shadow);font-weight:700}.historyMeta{font-size:14px;font-weight:400;opacity:.75;margin-top:3px}.miniScores{font-size:13px;margin-top:6px;font-weight:400;line-height:1.35}.hintText{font-size:13px;opacity:.65;margin-top:10px;font-weight:400}.pillButton.gray{background:rgba(0,0,0,.36);color:white}.confirmActions{display:flex;gap:10px;margin-top:20px}.confirmActions .pillButton{flex:1;min-width:0}
+.roundMenu{position:fixed;z-index:60;background:#fff;color:#000;text-shadow:var(--shadow);border-radius:4px;min-width:158px;padding:12px 0;box-shadow:0 5px 12px rgba(0,0,0,.25);font-size:18px}.roundItem{height:50px;display:flex;align-items:center;padding:0 18px;gap:15px;cursor:pointer}.roundItem:active{background:rgba(0,0,0,.08)}.roundItem .bigPlus{font-size:34px;line-height:0}
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.40);display:none}.overlay.show{display:block}.wheelBox{position:absolute;width:85vw;height:85vw;max-width:430px;max-height:430px;left:50%;transform:translateX(-50%);pointer-events:none}.circleBtn{position:absolute;width:24%;height:24%;border-radius:50%;border:0;background:#fff;color:#000;display:grid;place-items:center;font-weight:700;font-size:calc(min(85vw,430px)*.108);text-shadow:none;box-shadow:none;transform:scale(.72);opacity:0;animation:circleIn .48s cubic-bezier(.18,1.35,.30,1) forwards;pointer-events:auto}.circleBtn.selected{border:3px solid var(--gold);color:var(--gold)}.circleBtn.center{font-size:0}.flyingScore{position:fixed;z-index:75;width:40px;height:40px;display:grid;place-items:center;font-size:22px;font-weight:800;color:#000;text-shadow:var(--shadow);pointer-events:none;animation:flyScore .45s cubic-bezier(.4,0,.2,1) forwards}
+.drawerOverlay{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.40);display:none}.drawerOverlay.show{display:block}.drawerPanel{width:75vw;max-width:330px;height:100%;background:rgba(255,255,255,.48);color:#000;text-shadow:var(--shadow);box-shadow:7px 0 15px rgba(0,0,0,.22);transform:translateX(-103%);animation:drawerIn .22s ease-out forwards;position:relative;display:flex;flex-direction:column;overflow:hidden;backdrop-filter:blur(1.5px)}.drawerHead{height:96px;min-height:96px;display:flex;align-items:center;padding:20px 20px 10px 20px;border-bottom:1px solid rgba(0,0,0,.10);gap:12px}.drawerHead img{width:48px;height:48px;object-fit:contain}.drawerTitle{font-size:24px;font-weight:700;line-height:1.05}.drawerTopItems{padding:14px 0 0}.drawerBottomItems{padding:0 0 8px}.drawerSpacer{flex:1;min-height:28px}.drawerDivider{height:1px;background:rgba(0,0,0,.10);margin:8px 0 0}.drawerItem{min-height:46px;display:flex;align-items:center;gap:16px;padding:10px 20px;font-size:18px;font-weight:700;cursor:pointer}.drawerItem:active{background:rgba(255,255,255,.22);transform:none}.drawerIcon{width:25px;text-align:center;font-size:24px;flex:0 0 25px;position:relative}.drawerGold{color:#d4af37}.badge{margin-left:auto;background:#ff1515;color:white;text-shadow:none;border-radius:999px;min-width:20px;height:20px;display:grid;place-items:center;font-weight:700;font-size:11px;line-height:1}.drawerFooter{height:64px;min-height:64px;display:flex;align-items:center;padding:0 20px 10px 8px}.drawerFoot{flex:1;text-align:center;color:rgba(0,0,0,.42);font-weight:400;font-size:13px;line-height:1.65;cursor:pointer;padding-left:8px;letter-spacing:.5px}.gear{font-size:28px;color:#000;text-shadow:none;z-index:5;border:0;background:transparent;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;flex:0 0 44px}
+.dialogLayer{position:fixed;inset:0;z-index:240;background:rgba(0,0,0,.32);display:none;align-items:center;justify-content:center;padding:18px}.dialogLayer.show{display:flex}.glassDialog{width:min(82vw,410px);background:rgba(255,255,255,.45);border-radius:28px;padding:24px;color:#000;text-shadow:var(--shadow);box-shadow:0 10px 22px rgba(0,0,0,.25);animation:dialogIn .18s ease-out}.glassDialog h2{font-size:18px;margin:0 0 20px;font-weight:700}.nameInput{width:100%;height:60px;border:0;outline:0;border-radius:13px;background:var(--dialog-color,#2836a3);color:white;font-size:20px;font-weight:700;text-shadow:var(--shadow);padding:0 16px;margin-bottom:18px}.nameInput::placeholder{color:rgba(255,255,255,.76);font-weight:400}.hueBar{height:46px;border-radius:8px;background:linear-gradient(90deg,red,#ff0,#0f0,#0ff,#00f,#f0f,red);position:relative;margin-bottom:24px;cursor:pointer}.hueKnob{position:absolute;top:50%;width:38px;height:38px;margin-top:-19px;margin-left:-19px;border:4px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.35);background:transparent}.dialogActions{display:flex;gap:12px}.pillButton{height:52px;border:0;border-radius:26px;color:white;text-shadow:var(--shadow);font-size:18px;font-weight:700;box-shadow:0 4px 7px rgba(0,0,0,.32);flex:1;background:#4caf50}.pillButton.red{background:#f20f0f}.pillButton:active,.circleBtn:active,.playerCol:active,.rightSide:active,.drawerItem:active,.roundItem:active{transform:scale(.97)}.toast{position:fixed;z-index:200;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(0,0,0,.78);color:white;border-radius:18px;padding:9px 16px;font-weight:700;text-shadow:none;display:none;white-space:nowrap;pointer-events:none;user-select:none;-webkit-user-select:none;touch-action:none}
+
+.pageScreen{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;color:#000;z-index:125;text-shadow:var(--shadow);animation:pageIn .18s ease-out;overflow:hidden}.historyTop{height:92px;display:flex;align-items:center;gap:18px;padding:14px 28px 0 28px;border-bottom:1px solid rgba(0,0,0,.08);box-shadow:0 1px 7px rgba(0,0,0,.06)}.pageTitle{font-size:32px;font-weight:700;line-height:1;flex:1}.pageIcon{border:0;background:transparent;font-size:52px;line-height:1;color:#000;text-shadow:var(--shadow);width:42px;height:52px;display:grid;place-items:center;cursor:pointer}.pageIcon.search{font-size:43px;transform:rotate(-15deg)}.historyListPage{height:calc(100% - 92px);overflow-y:auto;padding:20px 19px 50px}.historyCard{border-radius:20px;background:#fff;box-shadow:0 6px 14px rgba(0,0,0,.18);margin:0 0 16px 0;color:#000;cursor:pointer}.historyCard.compact{min-height:76px;padding:17px 21px;display:flex;align-items:center;gap:13px}.histLeftIcon{color:#e83e4a;font-size:27px;text-shadow:none}.histMain{min-width:0;flex:1}.histTitle{font-size:22px;font-weight:700;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.histDate{font-size:16px;color:#777;font-weight:700;margin-top:3px}.histWinners{font-size:17px;font-weight:700;white-space:nowrap;max-width:42%;overflow:hidden;text-overflow:ellipsis}.historyCard.expanded{padding:20px}.histHeaderLine{display:flex;align-items:flex-start;gap:12px}.histDivider{height:1px;background:rgba(0,0,0,.08);margin:16px 0}.histPlayerRow{display:flex;align-items:center;justify-content:space-between;padding:6px 0}.histPlayerName{font-size:22px;font-weight:700;color:var(--pc)}.histRounds{font-size:17px;color:#777;font-weight:700;margin-left:27px;margin-top:5px}.histPoints{font-size:24px;font-weight:700}.scorePreview{height:230px;border-radius:15px;overflow:hidden;background:url('assets/bg_minigolf.jpg') center/cover no-repeat;display:flex;position:relative}.previewLabel{width:72px;background:rgba(0,0,0,.35);color:white;font-size:22px;font-weight:700;writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;justify-content:center}.previewSide{width:40px;background:rgba(0,0,0,.58);display:flex;flex-direction:column;color:white;text-shadow:var(--shadow)}.previewSide b{flex:1;display:grid;place-items:center;font-size:15px}.previewGrid{flex:1;display:grid;background:rgba(255,255,255,.58)}.pvCell{border:.5px solid rgba(70,100,70,.27);background:rgba(255,255,255,.42)}.pvCell.b{background:rgba(176,32,98,.18)}.previewZoom{position:absolute;inset:0;display:grid;place-items:center;color:white;font-size:42px;text-shadow:0 2px 4px rgba(0,0,0,.7)}.historyEmpty{background:#fff;border-radius:20px;box-shadow:0 6px 14px rgba(0,0,0,.15);padding:24px;font-weight:700}.settingsDialog{width:min(82vw,380px);background:rgba(185,185,185,.62);border-radius:29px;padding:24px 24px 28px;color:#000;text-shadow:var(--shadow);box-shadow:0 10px 26px rgba(0,0,0,.32);animation:dialogIn .18s ease-out;backdrop-filter:blur(3px)}.settingsHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}.settingsHead h2{font-size:18px;margin:0;font-weight:700}.infoBtn{width:32px;height:32px;border:0;border-radius:50%;background:rgba(0,0,0,.36);color:#222;font-weight:700;font-size:19px}.settingsRow,.settingsBg{background:rgba(150,150,150,.28);border-radius:13px;margin:10px 0;padding:14px 18px;min-height:62px;display:flex;align-items:center;gap:17px;font-size:22px;font-weight:400}.setIcon{font-size:29px;width:34px;text-align:center;color:#000;text-shadow:none}.switch{margin-left:auto;width:62px;height:32px;border:0;border-radius:999px;background:#eee;box-shadow:inset 0 0 0 2px rgba(0,0,0,.12);padding:3px;position:relative}.switch i{display:block;width:26px;height:26px;border-radius:50%;background:#888;transition:transform .16s ease,background .16s ease}.switch.on{background:#d5bf62}.switch.on i{background:#ffd84f;transform:translateX(30px)}.settingsBg{display:block}.settingsBgTitle{display:flex;align-items:center;gap:17px;font-size:22px}.chooseBg{margin:12px auto 0;display:block;width:92%;height:42px;border:0;border-radius:12px;background:#f1cf55;color:#000;font-weight:700;font-size:16px;text-shadow:var(--shadow)}.doneBtn{margin:28px auto 0;display:block;width:100%;height:52px;border:0;border-radius:26px;background:#4caf50;color:#fff;font-size:21px;text-shadow:var(--shadow);box-shadow:0 7px 14px rgba(0,0,0,.22)}
+@keyframes pageIn{from{transform:translateX(8%);opacity:.6}to{transform:translateX(-50%);opacity:1}}
+@keyframes logoPulse{to{transform:scale(1.05)}}@keyframes circleIn{to{transform:scale(1);opacity:1}}@keyframes drawerIn{to{transform:translateX(0)}}@keyframes dialogIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}@keyframes flyScore{to{left:var(--tx);top:var(--ty);transform:scale(1);opacity:.82}}
+@media (min-width:700px){:root{--player-w:calc((430px - (var(--sticky) + var(--sidepad)*2))/3.2)}.app{width:430px;margin:0 auto}.wheelBox{width:365px;height:365px}.circleBtn{font-size:46px}.topbar{max-height:none}.drawerPanel{max-width:330px}}
+
+
+/* v9 gesture/action refinements */
+.noSelect, .gesture, .historyCard, .activeCard, .roundItem, .drawerItem, .pageScreen, .scoreArea, .scoreViewport{user-select:none;-webkit-user-select:none;-webkit-user-drag:none;touch-action:none;overscroll-behavior:none}
+button{user-select:none;-webkit-user-select:none;touch-action:manipulation}.scoreViewport{touch-action:pan-x}.scoreCell,#roundHeader,.roundItem,.historyCard,.activeCard{cursor:pointer}.swiping{transition:none!important;will-change:transform}.swipeHint{font-size:13px;color:#888;font-weight:700;text-align:center;margin:6px 0 14px}.cardActions{display:flex;gap:10px;margin-top:14px}.smallAction{flex:1;border:0;border-radius:18px;height:38px;font-size:16px;font-weight:700;color:#fff;text-shadow:var(--shadow)}.smallAction.green{background:#4caf50}.smallAction.red{background:#f44336}.smallAction.blue{background:#2196f3}.activeTop{height:92px;display:flex;align-items:center;gap:18px;padding:14px 28px 0 28px;border-bottom:1px solid rgba(0,0,0,.08);box-shadow:0 1px 7px rgba(0,0,0,.06)}.activeListPage{height:calc(100% - 92px);overflow-y:auto;padding:20px 19px 50px}.activeCard{border-radius:20px;background:#fff;box-shadow:0 6px 14px rgba(0,0,0,.18);margin:0 0 16px 0;color:#000;cursor:pointer;min-height:82px;padding:17px 21px;display:flex;align-items:center;gap:13px;position:relative}.activeCard .histLeftIcon{color:#4caf50}.pageScreen .backdropAction{position:absolute;inset:auto 0 0 0;height:0}.confirmDialog{width:min(78vw,360px);background:rgba(225,225,225,.86);border-radius:28px;padding:24px;color:#000;text-shadow:var(--shadow);box-shadow:0 10px 26px rgba(0,0,0,.32);animation:dialogIn .16s ease-out}.confirmDialog h2{font-size:20px;margin:0 0 10px}.confirmDialog p{font-size:17px;margin:0 0 16px}.infoText{font-size:15px;line-height:1.35;color:#111;text-shadow:var(--shadow);margin-bottom:12px}.settingsSub{font-size:13px;color:#333;margin:8px 2px 0;text-align:center;font-weight:700}.chooseBg.reset{background:#ddd;margin-top:8px}.roundItem{position:relative;overflow:hidden}.roundItem .roundSwipeTip{margin-left:auto;color:#999;font-size:13px}.toast{z-index:300}.drawerItem.disabled{opacity:.55}.drawerItem .badge.hidden{display:none}.scoreCell:active,#roundHeader:active,.historyCard:active,.activeCard:active{filter:brightness(.96)}
+
+
+/* v10 fixes and tournament mode */
+.dialogLayer.show{z-index:240}.confirmDialog{z-index:245}.drawerPanel .gear:active{transform:scale(.92)}.draggingPlayer{box-shadow:0 10px 16px rgba(0,0,0,.35);filter:brightness(1.08);transition:none!important}.nameCell{touch-action:none}
+.tournamentPage,.tournamentEditor,.tournamentHistory{background:#fff;color:#000;text-shadow:var(--shadow)}.tournamentTop,.editorTop{height:92px;display:flex;align-items:center;gap:18px;padding:14px 28px 0 28px}.powerBtn,.saveIcon{border:0;background:transparent;color:#f44336;font-size:36px;font-weight:700;text-shadow:var(--shadow);width:48px;height:54px;display:grid;place-items:center}.saveIcon{color:#000;font-size:31px}.tournamentBody{padding:58px 28px 20px;display:flex;flex-direction:column;gap:24px}.tournamentCard{height:114px;border:0;background:#f8f8f8;border-radius:24px;box-shadow:2px 3px 5px rgba(0,0,0,.25);display:flex;align-items:center;gap:24px;padding:0 26px;text-align:left;color:#000;text-shadow:var(--shadow)}.tournamentCard b{display:block;font-size:26px}.tournamentCard small{font-size:18px;color:#444}.tourIcon{width:62px;height:62px;border-radius:16px;display:grid;place-items:center;font-size:38px}.tourIcon.green{background:#dceddf;color:#4caf50}.tourIcon.blue{background:#d8ebfb;color:#2196f3}.tourBottom{position:absolute;left:0;right:0;bottom:34px;display:flex;justify-content:space-evenly;text-align:center}.tourSmall{border:0;background:transparent;color:#333;text-shadow:var(--shadow);font-size:14px;font-weight:400}.tourSmall span{width:58px;height:58px;border-radius:50%;background:#f4f4f4;box-shadow:2px 3px 5px rgba(0,0,0,.22);display:grid;place-items:center;font-size:32px;margin:0 auto 8px}.purple{color:#9c27b0}.orange{color:#ff9800}.cyan{color:#00bcd4}.greenText{color:#4caf50}.redText{color:#f44336}.editorBody{height:calc(100% - 92px);overflow-y:auto;padding:18px 19px 70px}.fieldLabel{display:block;position:relative;border:1px solid #817a86;border-radius:4px;height:56px;margin-bottom:18px;padding:6px 12px 0;font-size:14px;font-weight:700;background:#fff}.fieldLabel input,.fieldLabel select{border:0;outline:0;width:100%;height:34px;background:transparent;font-size:19px;color:#000;text-shadow:var(--shadow);display:block;margin-top:0}.tourHole{display:grid;grid-template-columns:36px 1fr 58px;gap:10px;margin:0 0 10px;align-items:start;border-bottom:1px solid rgba(0,0,0,.06);padding-bottom:7px}.tourHole>b{font-size:22px;margin-top:15px;text-align:center}.tourInputs{display:flex;flex-direction:column;gap:6px}.tourInputs input{height:33px;border:0;border-radius:7px;background:#f1f1f1;font-size:16px;color:#000;padding:0 10px;text-shadow:var(--shadow);outline:0}.cameraBtn{width:58px;height:62px;border:0;border-radius:8px;background:#f5f5f5;font-size:25px;box-shadow:none}.tourHistoryList{height:calc(100% - 92px);overflow-y:auto;padding:20px 22px 80px}.tourNoteCard{height:75px;background:#f4f4f4;border-radius:14px;box-shadow:2px 3px 5px rgba(0,0,0,.16);display:flex;align-items:center;padding:10px 18px;margin-bottom:14px;color:#000;position:relative;overflow:hidden}.tourNoteMain b{font-size:18px;display:block}.tourNoteMain small{font-size:12px;color:#555;font-weight:700}.tourNoteCard::before{content:'✎';position:absolute;left:-88px;top:0;bottom:0;width:88px;background:#4caf50;color:#fff;display:grid;place-items:center;font-size:24px;text-shadow:none}.tourNoteCard::after{content:'🗑';position:absolute;right:-88px;top:0;bottom:0;width:88px;background:#e93434;color:#fff;display:grid;place-items:center;font-size:24px;text-shadow:none}.tournamentEditor .pageTitle{font-size:30px}.tournamentPage .pageTitle{font-size:29px}
+
+
+/* v17 tournament light/dark/system theme */
+.tournamentPage,.tournamentEditor,.tournamentHistory{transition:background .18s ease,color .18s ease}
+.tourThemeLight{--tour-bg:#ffffff;--tour-fg:#000000;--tour-card:#f8f8f8;--tour-card2:#f4f4f4;--tour-muted:#444;--tour-muted2:#555;--tour-input:#f1f1f1;--tour-border:#817a86;--tour-divider:rgba(0,0,0,.08);--tour-shadow:2px 3px 5px rgba(0,0,0,.22);background:var(--tour-bg)!important;color:var(--tour-fg)!important}
+.tourThemeDark{--tour-bg:#101114;--tour-fg:#f7f7f7;--tour-card:#1d1f24;--tour-card2:#24262d;--tour-muted:#c9c9c9;--tour-muted2:#b5b5b5;--tour-input:#2d3037;--tour-border:#5c6370;--tour-divider:rgba(255,255,255,.12);--tour-shadow:2px 3px 7px rgba(0,0,0,.58);background:var(--tour-bg)!important;color:var(--tour-fg)!important}
+.tourThemeLight .pageTitle,.tourThemeLight .pageIcon,.tourThemeLight .saveIcon{color:#000}.tourThemeDark .pageTitle,.tourThemeDark .pageIcon,.tourThemeDark .saveIcon{color:#fff}.tourThemeLight .powerBtn,.tourThemeDark .powerBtn{color:#f44336}
+.tourThemeLight .tournamentCard,.tourThemeLight .tourNoteCard{background:var(--tour-card);color:var(--tour-fg);box-shadow:var(--tour-shadow)}
+.tourThemeDark .tournamentCard,.tourThemeDark .tourNoteCard{background:var(--tour-card);color:var(--tour-fg);box-shadow:var(--tour-shadow)}
+.tourThemeLight .tournamentCard small,.tourThemeDark .tournamentCard small,.tourThemeLight .tourNoteMain small,.tourThemeDark .tourNoteMain small{color:var(--tour-muted)}
+.tourThemeLight .tourSmall,.tourThemeDark .tourSmall{color:var(--tour-fg)}
+.tourThemeLight .tourSmall span,.tourThemeDark .tourSmall span{background:var(--tour-card2);box-shadow:var(--tour-shadow)}
+.tourThemeLight .fieldLabel,.tourThemeDark .fieldLabel{background:var(--tour-bg);border-color:var(--tour-border);color:var(--tour-fg)}
+.tourThemeLight .fieldLabel input,.tourThemeDark .fieldLabel input,.tourThemeLight .fieldLabel select,.tourThemeDark .fieldLabel select{color:var(--tour-fg)}
+.tourThemeDark .fieldLabel select option{background:#1d1f24;color:#fff}.tourThemeLight .fieldLabel select option{background:#fff;color:#000}
+.tourThemeLight .tourInputs input,.tourThemeDark .tourInputs input{background:var(--tour-input);color:var(--tour-fg)}
+.tourThemeLight .cameraBtn,.tourThemeDark .cameraBtn{background:var(--tour-card2);color:var(--tour-fg)}
+.tourThemeLight .tourHole,.tourThemeDark .tourHole{border-bottom-color:var(--tour-divider)}
+.tourThemeLight .historyEmpty,.tourThemeDark .historyEmpty,.tourThemeLight .viewHint,.tourThemeDark .viewHint{color:var(--tour-muted2)}
+.tourThemeDark input::placeholder{color:#858b96}.tourThemeLight input::placeholder{color:#777}
+
+
+
+/* v23: history swipe-only actions, no ended-games drawer counter */
+.scoreArea{overflow:hidden}
+.playerDragActive .scoreViewport{cursor:grabbing;overflow-x:auto;overflow-y:hidden}
+.playerDragActive [data-player-col]{will-change:transform}
+.playerDragActive [data-player-col]:not(.dragHiddenColumn){transition:transform .16s ease}
+.dragHiddenColumn{visibility:hidden!important;opacity:1!important}
+.dragDropTarget{filter:brightness(1.04)}
+.playerColumnGhost{position:fixed;z-index:9999;pointer-events:none;opacity:1;filter:brightness(1.08) drop-shadow(0 10px 16px rgba(0,0,0,.36));will-change:transform;contain:layout paint;overflow:hidden;border-radius:0}
+.playerColumnGhost .ghostPart{box-sizing:border-box}
+.playerColumnGhost .nameCell{box-shadow:0 8px 16px rgba(0,0,0,.34)}
+.playerColumnGhost .scoreCell,.playerColumnGhost .roundTotalCell,.playerColumnGhost .grandTotal,.playerColumnGhost .footerSingle{box-shadow:0 2px 7px rgba(0,0,0,.18)}
+.scoreCell{position:relative;z-index:2}
+.rightSide{order:999!important}
+.leftCell{order:-999!important}
+
+
+
+/* v27: conservative fixes based on v24 */
+.tourBottom .tourSmall{display:block!important;text-align:center!important;min-width:72px;padding:0;border:0;background:transparent;line-height:1.1}
+.tourBottom .tourSmall span{display:grid!important;place-items:center;margin:0 auto 8px!important}
+.tourBottom .tourSmall b{display:block!important;text-align:center;font-size:14px;font-weight:700;white-space:nowrap;line-height:1.1}
+#addPlayerTop.rightSide{cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;z-index:30!important;position:relative!important}
+#addPlayerTop .plusIcon{display:grid!important;place-items:center!important;width:100%;height:100%;font-size:30px!important;line-height:1!important;transform:none!important;scale:1!important;pointer-events:none!important}
+#addPlayerTop:active{transform:none!important;filter:brightness(1.08)}
+#addPlayerTop.addPlayerLimit{cursor:default!important;pointer-events:auto!important}#addPlayerTop.addPlayerLimit:active{filter:none!important}
+
+
+/* v28: restore native Material icon sizing and swipe icons */
+.mi{width:1em;height:1em;display:inline-block;fill:currentColor;vertical-align:-.15em;pointer-events:none;flex:0 0 auto}
+.drawerIcon,.setIcon,.histLeftIcon,.tourIcon,.tourSmall span,.pageIcon,.saveIcon,.powerBtn,.cameraBtn,.previewZoom,.pin,.roundRefresh,.plusIcon,.bigPlus,.systemDrop{display:inline-flex;align-items:center;justify-content:center}
+.drawerIcon .mi,.tourIcon .mi,.tourSmall span .mi,.pageIcon .mi,.saveIcon .mi,.powerBtn .mi,.gear .mi,.histLeftIcon .mi,.settingsRow .mi,.settingsBgTitle .mi,.infoBtn .mi,.pin .mi,.roundRefresh .mi,.plusIcon .mi,.bigPlus .mi,.systemDrop .mi{filter:drop-shadow(1px 1px 0 rgba(0,0,0,.25))}
+.tourIcon .mi{width:.9em;height:.9em}.drawerIcon .mi{width:1.05em;height:1.05em}.pageIcon .mi,.saveIcon .mi,.powerBtn .mi,.gear .mi{width:.92em;height:.92em}.histDate .mi,.histWinners .mi,.histPlayerName .mi,.tourNoteMain b .mi,.activeCard .mi{width:1em;height:1em;margin-right:3px}.pin .mi{width:18px;height:18px}.roundRefresh .mi{width:18px;height:18px}.plusIcon .mi{width:24px;height:24px}.systemDrop .mi{width:20px;height:20px;margin-left:6px}.systemBox::after{content:none!important}
+.tourNoteCard::before{content:''!important;background:#4caf50 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") center/30px 30px no-repeat!important}.tourNoteCard::after{content:''!important;background:#e93434 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5-1-1h-5l-1 1H5v2h14V4z'/%3E%3C/svg%3E") center/30px 30px no-repeat!important}
+
+
+/* v29: Desktop-Handy-Emulation für PC-Tests */
+@media (hover:hover) and (pointer:fine) and (min-width:700px){
+  :root{
+    --phone-w:430px;
+    --phone-h:min(932px, calc(100vh - 32px));
+    --player-w:calc((430px - (var(--sticky) + var(--sidepad)*2))/3.2);
+  }
+  html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#202124!important;
+    display:grid;
+    place-items:center;
+  }
+  body::before{
+    content:'';
+    position:fixed;
+    left:50%;
+    top:50%;
+    width:calc(var(--phone-w) + 18px);
+    height:calc(var(--phone-h) + 18px);
+    transform:translate(-50%,-50%);
+    border-radius:34px;
+    background:#111;
+    box-shadow:0 18px 60px rgba(0,0,0,.58),0 0 0 1px rgba(255,255,255,.08);
+    pointer-events:none;
+    z-index:-1;
+  }
+  .bg{
+    position:fixed!important;
+    inset:auto!important;
+    left:50%!important;
+    top:50%!important;
+    width:var(--phone-w)!important;
+    height:var(--phone-h)!important;
+    transform:translate(-50%,-50%)!important;
+    border-radius:28px;
+    overflow:hidden;
+  }
+  .app{
+    position:relative!important;
+    width:var(--phone-w)!important;
+    height:var(--phone-h)!important;
+    max-height:var(--phone-h)!important;
+    margin:0 auto!important;
+    border-radius:28px;
+    overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);
+  }
+  .scrim.show,
+  .overlay.show,
+  .drawerOverlay.show,
+  .dialogLayer.show,
+  .pageScreen{
+    position:fixed!important;
+    inset:auto!important;
+    left:50%!important;
+    top:50%!important;
+    width:var(--phone-w)!important;
+    height:var(--phone-h)!important;
+    max-width:var(--phone-w)!important;
+    max-height:var(--phone-h)!important;
+    transform:translate(-50%,-50%)!important;
+    border-radius:28px;
+    overflow:hidden;
+  }
+  .dialogLayer.show{
+    display:flex!important;
+  }
+  .drawerPanel{
+    height:100%!important;
+    border-top-left-radius:28px;
+    border-bottom-left-radius:28px;
+  }
+  .toast{
+    bottom:calc((100vh - var(--phone-h))/2 + 24px)!important;
+    max-width:calc(var(--phone-w) - 32px);
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .systemMenu,.roundMenu{
+    max-width:calc(var(--phone-w) - 24px);
+  }
+}
+
+
+
+/* v34: Native-kompakte Skalierung.
+   v33 war optisch zu groß, weil Browser-CSS-Pixel wie Android-dp behandelt wurden.
+   Diese Version nimmt die stabilere v31-Basis und rechnet die Scorekarte wieder kompakter,
+   näher an der Android-Referenzbreite 360dp. Keine transform-scale-Layouts, damit Touch nicht bricht. */
+:root{
+  --native-layout-w:min(100vw, 360px);
+  --sticky:32px;
+  --sidepad:8px;
+  --gap:2px;
+  --player-w:calc((var(--native-layout-w) - (var(--sticky) + var(--sidepad)*2))/3.2);
+}
+.topbar{height:7.4dvh;min-height:50px;max-height:72px;padding:0 12px}
+.logo{width:5.1dvh;height:5.1dvh;min-width:38px;min-height:38px;max-width:55px;max-height:55px}.locationBox{height:25px;margin-left:9px;min-width:104px;border-radius:7px;padding:0 7px}.locationBox input{font-size:15px}.pin{font-size:15px;margin-right:4px}.systemBox{font-size:18px;line-height:1.05;padding-left:8px}.systemBox::after{font-size:15px;margin-left:5px}
+.scoreArea{padding:0 var(--sidepad) 8px var(--sidepad)}.leftTop{border-top-left-radius:13px}.rightTop{border-top-right-radius:13px}.leftBottom{border-bottom-left-radius:13px}.rightBottom{border-bottom-right-radius:13px}.roundNum{font-size:19px}.roundRefresh{font-size:23px}.plusIcon{font-size:28px}.nameCell{font-size:18px;padding:0 4px}.scoreCell{font-size:20px}.footerSingle{font-size:21px}.grandTotal{font-size:18px}.roundTotalCell{font-size:12.5px}.statsCheck{width:16px;height:16px}.flyingScore{width:36px;height:36px;font-size:20px}
+.wheelBox{width:82vw;height:82vw;max-width:370px;max-height:370px}.circleBtn{font-size:calc(min(82vw,370px)*.108)}
+.glassDialog{width:min(82vw,360px);border-radius:25px;padding:21px}.nameInput{height:54px;font-size:18px;border-radius:12px}.hueBar{height:41px}.hueKnob{width:34px;height:34px;margin-top:-17px;margin-left:-17px}.pillButton{height:48px;font-size:17px}.drawerPanel{width:75vw;max-width:295px}.drawerHead{height:88px;min-height:88px;padding:18px 18px 9px 18px;gap:11px}.drawerHead img{width:44px;height:44px}.drawerTitle{font-size:22px}.drawerTopItems{padding:12px 0 0}.drawerBottomItems{padding:0 0 6px}.drawerItem{min-height:43px;gap:15px;padding:9px 18px;font-size:17px}.drawerIcon{width:23px;font-size:23px}.gear{font-size:26px}.drawerFooter{height:58px;min-height:58px;padding:0 18px 8px 7px}.drawerFoot{font-size:12.5px;line-height:1.55}.historyTop,.activeTop,.tournamentTop,.editorTop{height:84px;padding:12px 24px 0 24px}.pageTitle{font-size:27px}.historyListPage,.activeListPage{height:calc(100% - 84px)}.tournamentBody{padding:48px 24px 18px;gap:20px}.tournamentCard{height:102px;border-radius:22px;gap:20px;padding:0 23px}.tournamentCard b{font-size:23px}.tournamentCard small{font-size:16px}.tourIcon{width:56px;height:56px}.tourBottom{bottom:28px}.tourSmall span{width:52px;height:52px}.editorBody{height:calc(100% - 84px);padding:15px 17px 64px}.fieldLabel{height:52px;margin-bottom:15px}.tourHole{grid-template-columns:32px 1fr 52px;gap:8px;margin-bottom:8px}.tourHole>b{font-size:20px}.cameraBtn{width:52px;height:56px}.tourInputs input{height:31px;font-size:15px}
+
+@media (hover:hover) and (pointer:fine) and (min-width:700px){
+  :root{
+    --phone-w:393px;
+    --phone-h:min(852px, calc(100vh - 32px));
+    --native-layout-w:360px;
+    --player-w:calc((var(--native-layout-w) - (var(--sticky) + var(--sidepad)*2))/3.2);
+  }
+  .app{width:var(--phone-w)!important;height:var(--phone-h)!important;margin:0 auto}.wheelBox{width:303px;height:303px}.circleBtn{font-size:33px}.drawerPanel{max-width:295px}.topbar{max-height:72px}
+}
+@media (max-width:360px){:root{--native-layout-w:100vw;--sticky:31px;--sidepad:7px}.nameCell{font-size:17px}.scoreCell{font-size:19px}.systemBox{font-size:16px}}
+
+
+/* v35 native drawer polish */
+.drawerPanel .drawerItem span:nth-child(2){flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.drawerPanel .drawerIcon .mi{width:24px;height:24px}.drawerPanel .drawerIcon{display:inline-flex;align-items:center;justify-content:center}.drawerPanel .drawerFooter .mi{width:26px;height:26px}.drawerPanel .drawerGold{color:#d4af37}
+
+
+
+/* v37: native active/history screens with SwipeToDismiss-style backgrounds */
+.historyListPage,.activeListPage{padding:16px 16px 48px!important;overflow-y:auto;touch-action:pan-y!important}.swipeHint{display:none!important}.swipeWrap{position:relative;margin:0 0 12px 0;border-radius:16px;overflow:hidden;min-height:76px;touch-action:none;user-select:none;-webkit-user-select:none}.swipeWrap.expanded{min-height:120px}.swipeBg{position:absolute;inset:0;border-radius:16px;background:transparent;display:flex;align-items:center;padding:0 24px;pointer-events:none;transition:background .08s ease}.swipeBg .swipeIcon{position:absolute;color:#fff;line-height:1;display:grid;place-items:center;filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.30));opacity:0;transform:scale(.92);transition:opacity .08s ease,transform .08s ease}.swipeBg .swipeIcon.left{left:24px}.swipeBg .swipeIcon.right{right:24px}.swipeBg .mi{width:27px;height:27px;fill:currentColor}.swipeWrap.swipeRight.historySwipe .swipeBg{background:#2196f3}.swipeWrap.swipeLeft.historySwipe .swipeBg{background:#f44336}.swipeWrap.swipeRight.activeSwipe .swipeBg{background:#4caf50}.swipeWrap.swipeLeft.activeSwipe .swipeBg{background:#f44336}.swipeWrap.swipeRight .swipeIcon.left,.swipeWrap.swipeLeft .swipeIcon.right{opacity:1;transform:scale(1)}.swipeWrap .historyCard,.swipeWrap .activeCard{position:relative;z-index:2;margin:0!important}.historyCard,.activeCard{border-radius:16px!important;background:#fff!important;box-shadow:0 4px 10px rgba(0,0,0,.16)!important;color:#000;text-shadow:var(--shadow)}.historyCard.compact,.activeCard.compact{min-height:76px!important;padding:14px 16px!important;display:flex;align-items:flex-start;gap:10px}.historyCard.expanded,.activeCard.expanded{padding:16px!important}.histLeftIcon{font-size:16px!important;flex:0 0 18px;display:flex;align-items:center;justify-content:center;margin-top:2px}.histLeftIcon .mi{width:17px;height:17px}.histMain{flex:1;min-width:0}.histTitle{font-size:17px!important;font-weight:700!important;line-height:1.08!important}.histMetaLine{display:flex;align-items:center;gap:4px;font-size:12.5px;color:#777;font-weight:700;line-height:1.2;margin-top:2px}.histMetaLine .mi{width:13px;height:13px;fill:#777;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.18))}.histWinners{font-size:12.5px!important;font-weight:700!important;max-width:38%;display:flex;align-items:center;gap:4px;align-self:flex-start;margin-top:3px}.histWinners .mi{width:15px;height:15px;fill:#ffd700}.histPlayerPreview{font-size:12px;font-weight:700;margin-top:8px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.histPlayerPreview span{font-weight:700}.histHeaderLine{gap:10px!important}.histDivider{margin:12px 0!important}.histPlayerRow{padding:4px 0!important}.histPlayerName{font-size:17px!important}.histPlayerName .mi{width:14px;height:14px;fill:#ffd700}.histRounds{font-size:12.5px!important;margin-left:20px!important}.histPoints{font-size:18px!important}.activeCard .histLeftIcon{color:#4caf50!important}.activeCard .histWinners{color:#777;display:block;text-align:right}.activeCard.expanded .histWinners{display:none}.historyTop,.activeTop{height:84px!important;padding:12px 24px 0 24px!important}.pageTitle{font-size:27px!important}.pageIcon{font-size:42px!important;width:38px!important;height:48px!important}.pageIcon .mi{width:30px;height:30px}.pageIcon.search .mi{width:29px;height:29px}.historyListPage,.activeListPage{height:calc(100% - 84px)!important}.historyEmpty{font-size:16px}.scorePreview{height:180px!important;border-radius:12px!important}.previewLabel{width:56px!important;font-size:18px!important}.previewSide{width:32px!important}.previewSide b{font-size:12px!important}
+
+
+
+/* v38: Tournament editor mapped directly from the native Compose TournamentScreen.
+   Fixed Material sizes stay fixed (48dp icon buttons, 56dp outlined fields), while only
+   values using adaptiveDp/adaptiveSp scale with the visible app width. */
+.nativeTournamentEditor{
+  --tn-fixed-icon-button:48px;
+  --tn-fixed-icon:24px;
+  --tn-fixed-outline-height:56px;
+  --tn-fixed-outline-text:16px;
+  --tn-fixed-label-text:12px;
+  text-shadow:1px 1px 1.5px rgba(0,0,0,.5)!important;
+}
+.nativeTournamentEditor .editorTop{
+  height:var(--tn-header-height)!important;
+  min-height:var(--tn-header-height)!important;
+  padding:var(--tn-pad16)!important;
+  gap:var(--tn-pad8)!important;
+  box-sizing:border-box;
+  align-items:center!important;
+}
+.nativeTournamentEditor .editorTop .pageIcon,
+.nativeTournamentEditor .editorTop .saveIcon{
+  width:var(--tn-fixed-icon-button)!important;
+  height:var(--tn-fixed-icon-button)!important;
+  min-width:var(--tn-fixed-icon-button)!important;
+  padding:0!important;
+  margin:0!important;
+  font-size:var(--tn-fixed-icon)!important;
+  display:grid!important;
+  place-items:center!important;
+}
+.nativeTournamentEditor .editorTop .pageIcon .mi,
+.nativeTournamentEditor .editorTop .saveIcon .mi{
+  width:var(--tn-fixed-icon)!important;
+  height:var(--tn-fixed-icon)!important;
+}
+.nativeTournamentEditor .editorTop .pageTitle{
+  font-size:var(--tn-title-size)!important;
+  line-height:1.1!important;
+  min-width:0;
+  text-shadow:1px 1px 1.5px rgba(0,0,0,.5)!important;
+}
+.nativeTournamentEditor .editorBody{
+  height:calc(100% - var(--tn-header-height))!important;
+  padding:0!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+  min-height:0;
+}
+.nativeTournamentEditor .editorMeta{
+  flex:0 0 auto;
+  padding:10px var(--tn-pad16) 0!important;
+}
+.nativeTournamentEditor .fieldLabel{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  height:var(--tn-fixed-outline-height)!important;
+  margin:0!important;
+  padding:0 var(--tn-pad12)!important;
+  border:1px solid var(--tour-border,#817a86)!important;
+  border-radius:4px!important;
+  background:var(--tour-bg,#fff)!important;
+  color:var(--tour-fg,#000)!important;
+  font-weight:400!important;
+  box-sizing:border-box!important;
+}
+.nativeTournamentEditor .fieldLabel + .fieldLabel{margin-top:var(--tn-pad8)!important}
+.nativeTournamentEditor .outlineLabel{
+  position:absolute;
+  left:var(--tn-pad12);
+  top:50%;
+  transform:translateY(-50%);
+  z-index:2;
+  padding:0 2px;
+  background:var(--tour-bg,#fff);
+  color:var(--tour-fg,#000);
+  font-size:var(--tn-fixed-outline-text);
+  line-height:1;
+  font-weight:400;
+  pointer-events:none;
+  transition:top .12s ease,font-size .12s ease;
+}
+.nativeTournamentEditor .fieldLabel.hasValue .outlineLabel,
+.nativeTournamentEditor .fieldLabel:focus-within .outlineLabel{
+  top:0;
+  font-size:var(--tn-fixed-label-text);
+}
+.nativeTournamentEditor .fieldLabel input,
+.nativeTournamentEditor .fieldLabel select{
+  width:100%!important;
+  height:100%!important;
+  border:0!important;
+  outline:0!important;
+  margin:0!important;
+  padding:7px 0 0!important;
+  background:transparent!important;
+  color:var(--tour-fg,#000)!important;
+  font-size:var(--tn-fixed-outline-text)!important;
+  font-weight:400!important;
+  line-height:1.2!important;
+  text-shadow:1px 1px 1.5px rgba(0,0,0,.5)!important;
+  appearance:auto;
+}
+.nativeTournamentEditor .locationField:not(.hasValue):not(:focus-within) input{color:transparent!important;caret-color:transparent}
+.nativeTournamentEditor .holesScroller{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  margin-top:var(--tn-pad16);
+  touch-action:pan-y!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.nativeTournamentEditor .holesList{
+  padding:var(--tn-pad16)!important;
+  margin:0!important;
+}
+.nativeTournamentEditor .tourHole{
+  display:grid!important;
+  grid-template-columns:var(--tn-num-width) minmax(0,1fr)!important;
+  gap:0!important;
+  align-items:start!important;
+  width:100%!important;
+  margin:0 0 var(--tn-pad8)!important;
+  padding:0 0 var(--tn-pad8)!important;
+  border-bottom:1px solid var(--tour-divider,rgba(0,0,0,.08))!important;
+  box-sizing:border-box;
+}
+.nativeTournamentEditor .tourHole>b{
+  width:var(--tn-num-width)!important;
+  margin:0!important;
+  padding-top:var(--tn-pad8)!important;
+  text-align:center!important;
+  font-size:var(--tn-number-size)!important;
+  line-height:1.2!important;
+  font-weight:700!important;
+}
+.nativeTournamentEditor .tourHoleContent{
+  min-width:0;
+  padding:0 var(--tn-pad4)!important;
+}
+.nativeTournamentEditor .tourLine{
+  display:flex!important;
+  width:100%!important;
+  min-width:0;
+  align-items:center!important;
+}
+.nativeTournamentEditor .tourInputs{
+  display:flex!important;
+  flex:1 1 auto!important;
+  min-width:0!important;
+  flex-direction:column!important;
+  gap:var(--tn-pad4)!important;
+}
+.nativeTournamentEditor .tourInputs input,
+.nativeTournamentEditor .tourNotesInput{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:var(--tn-input-height)!important;
+  margin:0!important;
+  padding:var(--tn-pad6) var(--tn-pad8)!important;
+  border:0!important;
+  outline:0!important;
+  border-radius:var(--tn-field-radius)!important;
+  background:color-mix(in srgb,var(--tour-fg,#000) 5%,var(--tour-bg,#fff) 95%)!important;
+  color:var(--tour-fg,#000)!important;
+  font-size:var(--tn-input-size)!important;
+  line-height:1.2!important;
+  font-weight:400!important;
+  text-shadow:1px 1px 1.5px rgba(0,0,0,.5)!important;
+  box-sizing:border-box!important;
+  appearance:none;
+}
+.nativeTournamentEditor .tourInputs input::placeholder,
+.nativeTournamentEditor .tourNotesInput::placeholder{
+  color:color-mix(in srgb,var(--tour-fg,#000) 30%,transparent)!important;
+  opacity:1;
+}
+.nativeTournamentEditor .tourNotesInput{margin-top:var(--tn-pad4)!important}
+.nativeTournamentEditor .cameraBtn{
+  flex:0 0 var(--tn-camera-size)!important;
+  width:var(--tn-camera-size)!important;
+  min-width:var(--tn-camera-size)!important;
+  height:var(--tn-camera-size)!important;
+  margin:0 0 0 var(--tn-pad8)!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:var(--tn-camera-radius)!important;
+  background:var(--tour-card2,#f4f4f4)!important;
+  color:var(--tour-fg,#000)!important;
+  display:grid!important;
+  place-items:center!important;
+  box-shadow:none!important;
+}
+.nativeTournamentEditor .cameraBtn .mi{
+  width:var(--tn-camera-icon)!important;
+  height:var(--tn-camera-icon)!important;
+}
+.nativeTournamentEditor.tournamentView .viewEditorTop{
+  height:var(--tn-header-height)!important;
+}
+.nativeTournamentEditor .viewTitleBlock{
+  flex:1 1 auto;
+  min-width:0;
+  line-height:1.12;
+}
+.nativeTournamentEditor .viewTitleLine{
+  display:flex;
+  align-items:center;
+  gap:var(--tn-pad4);
+  font-size:var(--tn-view-title-size);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.nativeTournamentEditor .viewTitleLine .mi{width:var(--tn-camera-icon);height:var(--tn-camera-icon)}
+.nativeTournamentEditor .viewSub,
+.nativeTournamentEditor .viewDate{
+  margin-left:calc(var(--tn-camera-icon) + var(--tn-pad4));
+  font-size:var(--tn-view-meta-size);
+  color:color-mix(in srgb,var(--tour-fg,#000) 62%,transparent);
+}
+.nativeTournamentEditor .viewDate{display:flex;align-items:center;gap:var(--tn-pad4)}
+.nativeTournamentEditor .viewDate .mi{width:var(--tn-view-date-icon);height:var(--tn-view-date-icon)}
+.nativeTournamentEditor .viewEditorBody{height:calc(100% - var(--tn-header-height))!important}
+.nativeTournamentEditor .viewHolesScroller{margin-top:0!important}
+.nativeTournamentEditor .viewCamera{opacity:.35}
+
+
+/* v39: Tournament selection + saved notes mapped to the native Compose screens.
+   Values using adaptiveDp/adaptiveSp are calculated by applyTournamentNativeMetrics(). */
+.tournamentPage,
+.tournamentHistory{
+  display:flex!important;
+  flex-direction:column!important;
+  min-height:0;
+  text-shadow:1px 1px 1.5px rgba(0,0,0,.5)!important;
+}
+
+/* Native TournamentSelectionScreen header: 16.adaptiveDp padding, 48dp IconButtons,
+   8.adaptiveDp spacing and 20.adaptiveSp title. */
+.tournamentPage .tournamentTop,
+.tournamentHistory .historyTop{
+  flex:0 0 var(--tour-header-height)!important;
+  width:100%!important;
+  height:var(--tour-header-height)!important;
+  min-height:var(--tour-header-height)!important;
+  padding:var(--tour-a16)!important;
+  display:flex!important;
+  align-items:center!important;
+  box-sizing:border-box!important;
+  gap:var(--tour-a8)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.tournamentPage .tournamentTop .pageIcon,
+.tournamentPage .tournamentTop .powerBtn,
+.tournamentHistory .historyTop .pageIcon{
+  flex:0 0 var(--tour-fixed-icon-button)!important;
+  width:var(--tour-fixed-icon-button)!important;
+  height:var(--tour-fixed-icon-button)!important;
+  min-width:var(--tour-fixed-icon-button)!important;
+  min-height:var(--tour-fixed-icon-button)!important;
+  padding:0!important;
+  margin:0!important;
+  display:grid!important;
+  place-items:center!important;
+  background:transparent!important;
+  border:0!important;
+}
+.tournamentPage .tournamentTop .pageIcon .mi,
+.tournamentPage .tournamentTop .powerBtn .mi,
+.tournamentHistory .historyTop .pageIcon .mi{
+  width:var(--tour-fixed-icon)!important;
+  height:var(--tour-fixed-icon)!important;
+}
+.tournamentPage .tournamentTop .pageTitle,
+.tournamentHistory .historyTop .pageTitle{
+  flex:1 1 auto!important;
+  min-width:0;
+  font-size:var(--ts-header-title,var(--th-title-size))!important;
+  line-height:1.08!important;
+  font-weight:700!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-shadow:1px 1px 1.5px rgba(0,0,0,.5)!important;
+}
+.tournamentHistory .historyTop{justify-content:flex-start!important}
+.tournamentHistory .historyTop .pageTitle{font-size:var(--th-title-size)!important}
+.tournamentHistory .historyTop .search{margin-left:auto!important}
+
+/* Main selection cards: exact dimensions from SelectionCard(). */
+.tournamentPage .tournamentBody{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  height:auto!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:calc(var(--tour-a12) + var(--tour-a20)) var(--tour-a24) var(--tour-a12)!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:var(--tour-a20)!important;
+  box-sizing:border-box!important;
+  touch-action:pan-y!important;
+  overscroll-behavior:contain;
+}
+.tournamentPage .tournamentCard{
+  flex:0 0 var(--ts-card-height)!important;
+  width:100%!important;
+  height:var(--ts-card-height)!important;
+  min-height:var(--ts-card-height)!important;
+  margin:0!important;
+  padding:var(--ts-card-padding)!important;
+  border:0!important;
+  border-radius:var(--ts-card-radius)!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:var(--tour-a16)!important;
+  text-align:left!important;
+  box-shadow:2px 3px 5px rgba(0,0,0,.24)!important;
+  overflow:hidden;
+}
+.tournamentPage .tourIcon{
+  flex:0 0 var(--ts-card-icon-box)!important;
+  width:var(--ts-card-icon-box)!important;
+  height:var(--ts-card-icon-box)!important;
+  min-width:var(--ts-card-icon-box)!important;
+  border-radius:var(--ts-card-icon-radius)!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:var(--ts-card-icon-padding)!important;
+  box-sizing:border-box!important;
+}
+.tournamentPage .tourIcon .mi{
+  width:100%!important;
+  height:100%!important;
+}
+.tournamentPage .tourCardText{
+  min-width:0;
+  display:block;
+  line-height:1.12;
+}
+.tournamentPage .tournamentCard b{
+  display:block!important;
+  margin:0!important;
+  font-size:var(--ts-card-title)!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tournamentPage .tournamentCard small{
+  display:block!important;
+  margin:1px 0 0!important;
+  font-size:var(--ts-card-subtitle)!important;
+  line-height:1.18!important;
+  font-weight:400!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Native bottom option row: static at the bottom, 12dp sides / 32dp bottom. */
+.tournamentPage .tourBottom{
+  position:static!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  min-height:calc(var(--ts-option-circle) + var(--tour-a8) + var(--ts-option-label) + var(--tour-a32))!important;
+  padding:0 var(--tour-a12) var(--tour-a32)!important;
+  display:flex!important;
+  justify-content:space-evenly!important;
+  align-items:flex-start!important;
+  box-sizing:border-box!important;
+  text-align:center!important;
+}
+.tournamentPage .tourSmall{
+  flex:0 1 auto!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  line-height:1!important;
+}
+.tournamentPage .tourSmall span{
+  flex:0 0 var(--ts-option-circle)!important;
+  width:var(--ts-option-circle)!important;
+  height:var(--ts-option-circle)!important;
+  margin:0!important;
+  padding:var(--ts-option-icon-pad)!important;
+  border-radius:50%!important;
+  display:grid!important;
+  place-items:center!important;
+  box-sizing:border-box!important;
+  box-shadow:2px 3px 5px rgba(0,0,0,.22)!important;
+}
+.tournamentPage .tourSmall span .mi{
+  width:100%!important;
+  height:100%!important;
+}
+.tournamentPage .tourSmall b{
+  display:block!important;
+  margin:var(--tour-a8) 0 0!important;
+  padding:0!important;
+  font-size:var(--ts-option-label)!important;
+  line-height:1.15!important;
+  font-weight:500!important;
+  white-space:nowrap!important;
+}
+
+/* Native TournamentHistoryScreen list: 16dp content padding and 12dp item spacing. */
+.tournamentHistory .tourHistoryList{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  height:auto!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:var(--tour-a16)!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:var(--tour-a12)!important;
+  box-sizing:border-box!important;
+  touch-action:pan-y!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.tournamentHistory .tourSwipeRow{
+  position:relative!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:var(--th-card-radius)!important;
+  overflow:hidden!important;
+  background:transparent!important;
+  isolation:isolate;
+  touch-action:none!important;
+}
+.tournamentHistory .tourSwipeBg{
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  display:block!important;
+  overflow:hidden!important;
+  border-radius:var(--th-card-radius)!important;
+  pointer-events:none!important;
+}
+.tournamentHistory .tourSwipeBg .editBg,
+.tournamentHistory .tourSwipeBg .deleteBg{
+  position:absolute!important;
+  top:0!important;
+  bottom:0!important;
+  width:50%!important;
+  display:flex!important;
+  align-items:center!important;
+  box-sizing:border-box!important;
+  color:#fff!important;
+  opacity:0;
+  transition:opacity .06s ease;
+}
+.tournamentHistory .tourSwipeRow.swipeRight .tourSwipeBg .editBg,
+.tournamentHistory .tourSwipeRow.swipeLeft .tourSwipeBg .deleteBg{opacity:1}
+.tournamentHistory .tourSwipeBg .editBg{
+  left:0!important;
+  justify-content:flex-start!important;
+  padding-left:var(--th-swipe-padding)!important;
+  background:#4caf50!important;
+}
+.tournamentHistory .tourSwipeBg .deleteBg{
+  right:0!important;
+  justify-content:flex-end!important;
+  padding-right:var(--th-swipe-padding)!important;
+  background:#f44336!important;
+}
+.tournamentHistory .tourSwipeBg .mi{
+  width:var(--th-swipe-icon)!important;
+  height:var(--th-swipe-icon)!important;
+  fill:currentColor!important;
+  filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.30))!important;
+}
+.tournamentHistory .tourNoteCard{
+  position:relative!important;
+  z-index:2!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:var(--th-card-padding)!important;
+  border-radius:var(--th-card-radius)!important;
+  display:block!important;
+  color:var(--tour-fg,#000)!important;
+  overflow:hidden!important;
+  box-shadow:0 var(--th-shadow) calc(var(--th-shadow) * 2) rgba(0,0,0,.18)!important;
+  transform:translateX(0);
+  will-change:transform;
+  touch-action:none!important;
+}
+.tournamentHistory .tourNoteCard::before,
+.tournamentHistory .tourNoteCard::after{content:none!important;display:none!important}
+.tournamentHistory .tourNoteMain{
+  display:block!important;
+  width:100%!important;
+  min-width:0;
+  line-height:1.12!important;
+}
+.tournamentHistory .tourNoteMain b{
+  display:flex!important;
+  align-items:center!important;
+  gap:var(--tour-a4)!important;
+  margin:0!important;
+  font-size:var(--th-location-size)!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tournamentHistory .tourNoteMain b .mi{
+  flex:0 0 var(--th-place-icon)!important;
+  width:var(--th-place-icon)!important;
+  height:var(--th-place-icon)!important;
+}
+.tournamentHistory .tourNoteMain small{
+  display:block!important;
+  margin:0 0 0 calc(var(--th-place-icon) + var(--tour-a4))!important;
+  line-height:1.2!important;
+  font-weight:400!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tournamentHistory .tourNoteMain small:not(.noteMetaLine){font-size:var(--th-system-size)!important}
+.tournamentHistory .tourNoteMain .noteMetaLine{
+  margin-top:1px!important;
+  font-size:var(--th-date-size)!important;
+  color:color-mix(in srgb,var(--tour-fg,#000) 50%,transparent)!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:var(--tour-a4)!important;
+}
+.tournamentHistory .tourNoteMain .noteMetaLine .mi{
+  flex:0 0 var(--th-date-icon)!important;
+  width:var(--th-date-icon)!important;
+  height:var(--th-date-icon)!important;
+  fill:currentColor!important;
+}
+.tournamentHistory .tourNoteCard.swiping{transition:none!important}
+
+@media (max-width:350px){
+  .tournamentPage .tournamentCard small{white-space:normal!important}
+  .tournamentPage .tourBottom{padding-left:var(--tour-a8)!important;padding-right:var(--tour-a8)!important}
+}
+
+
+
+/* v40 — Hauptseite/Haupttabelle direkt nach der nativen Compose-Geometrie.
+   Referenz: ResponsiveUtils.kt, MainActivity.kt, TopAppBar.kt und ScoreTable.kt.
+   Keine globale transform-Skalierung: Touch, Scroll und Spieler-Drag bleiben unverändert. */
+:root{
+  --main-dp-scale:1;
+  --main-layout-w:360px;
+  --main-full-h:780px;
+  --main-title-h:62.4px;
+  --main-logo-size:43.68px;
+  --main-system-font:13.73px;
+  --main-location-font:12px;
+  --main-location-placeholder-font:11px;
+  --main-radius:15px;
+  --main-row-h:32px;
+  --main-header-icon:19.2px;
+  --main-round-font:12.8px;
+  --main-name-font:14.4px;
+  --main-hole-font:16px;
+  --main-score-font:17.6px;
+  --main-score-old-font:12.8px;
+  --main-plus-icon:14.4px;
+  --main-footer-font:17.6px;
+  --main-round-total-font:17px;
+  --main-round-old-font:12px;
+  --main-grand-font:17px;
+  --main-shadow:.8px .8px 1.2px rgba(0,0,0,.52);
+  --sticky:calc(35px * var(--main-dp-scale));
+  --sidepad:calc(10px * var(--main-dp-scale));
+  --gap:calc(2px * var(--main-dp-scale));
+  --player-w:calc((var(--main-layout-w) - var(--sticky) - (var(--sidepad) * 2))/3.2);
+}
+
+/* Die native App berechnet die Topbar aus 8 % der vollständigen Fensterhöhe. */
+.mainLayer>.topbar{
+  height:var(--main-title-h)!important;
+  min-height:var(--main-title-h)!important;
+  max-height:var(--main-title-h)!important;
+  padding:0 calc(16px * var(--main-dp-scale))!important;
+  flex:0 0 var(--main-title-h)!important;
+}
+.mainLayer>.topbar .top-left{min-width:0!important;flex:1 1 auto!important}
+.mainLayer>.topbar .logo{
+  width:var(--main-logo-size)!important;
+  height:var(--main-logo-size)!important;
+  min-width:var(--main-logo-size)!important;
+  min-height:var(--main-logo-size)!important;
+  max-width:var(--main-logo-size)!important;
+  max-height:var(--main-logo-size)!important;
+}
+.mainLayer>.topbar .locationBox{
+  margin-left:calc(12px * var(--main-dp-scale))!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:calc(22px * var(--main-dp-scale))!important;
+  border-radius:calc(8px * var(--main-dp-scale))!important;
+  padding:calc(4px * var(--main-dp-scale)) calc(8px * var(--main-dp-scale))!important;
+  line-height:1!important;
+}
+.mainLayer>.topbar .locationBox input{
+  height:auto!important;
+  min-height:calc(14px * var(--main-dp-scale))!important;
+  font-size:var(--main-location-font)!important;
+  line-height:1.05!important;
+  text-shadow:var(--main-shadow)!important;
+}
+.mainLayer>.topbar .locationBox input::placeholder{font-size:var(--main-location-placeholder-font)!important}
+.mainLayer>.topbar .pin{margin-right:calc(4px * var(--main-dp-scale))!important;opacity:.72!important}
+.mainLayer>.topbar .pin .mi{width:calc(14px * var(--main-dp-scale))!important;height:calc(14px * var(--main-dp-scale))!important}
+.mainLayer>.topbar .systemBox{
+  padding-left:calc(8px * var(--main-dp-scale))!important;
+  font-size:var(--main-system-font)!important;
+  line-height:1.1!important;
+  text-shadow:var(--main-shadow)!important;
+  flex:0 0 auto!important;
+}
+.mainLayer>.topbar .systemDrop .mi{
+  width:calc(var(--main-title-h) * .35)!important;
+  height:calc(var(--main-title-h) * .35)!important;
+  margin-left:calc(2px * var(--main-dp-scale))!important;
+}
+
+/* ScoreTable.kt: 10dp Seiten-/Bodenabstand, 35dp Sticky-Spalten, 2dp Separatoren. */
+.mainLayer>.scoreArea{
+  padding:0 var(--sidepad) calc(10px * var(--main-dp-scale)) var(--sidepad)!important;
+  overflow:hidden!important;
+}
+.mainLayer .scoreViewport{height:100%!important;overscroll-behavior-x:contain!important}
+.mainLayer .scoreContent{height:100%!important;margin:0 auto!important}
+.mainLayer .scoreSpacer{height:2px!important;min-height:2px!important}
+.mainLayer .leftTop{border-top-left-radius:var(--main-radius)!important}
+.mainLayer .rightTop{border-top-right-radius:var(--main-radius)!important}
+.mainLayer .leftBottom{border-bottom-left-radius:var(--main-radius)!important}
+.mainLayer .rightBottom{border-bottom-right-radius:var(--main-radius)!important}
+.mainLayer .cell,.mainLayer .playerCol,.mainLayer .footerCol{box-sizing:border-box!important}
+.mainLayer .nameCell,.mainLayer .scoreCell,.mainLayer .footerSingle,.mainLayer .roundTotalCell,.mainLayer .grandTotal,.mainLayer .holeRow>.leftCell{
+  text-shadow:var(--main-shadow)!important;
+}
+.mainLayer .nameCell{
+  padding:0 calc(4px * var(--main-dp-scale))!important;
+  font-size:var(--main-name-font)!important;
+  line-height:1!important;
+}
+.mainLayer .holeRow>.leftCell{font-size:var(--main-hole-font)!important;line-height:1!important}
+.mainLayer .scoreCell{
+  font-size:var(--main-score-font)!important;
+  line-height:1!important;
+  border-width:calc(.5px * var(--main-dp-scale))!important;
+}
+.mainLayer .scoreCell.roundShadow{font-size:var(--main-score-old-font)!important}
+.mainLayer .roundRefresh{font-size:0!important;line-height:0!important}
+.mainLayer .roundRefresh .mi{width:var(--main-header-icon)!important;height:var(--main-header-icon)!important}
+.mainLayer .roundNum{font-size:var(--main-round-font)!important;line-height:1!important}
+.mainLayer .plusIcon{font-size:0!important;line-height:0!important}
+.mainLayer .plusIcon .mi{width:var(--main-plus-icon)!important;height:var(--main-plus-icon)!important}
+.mainLayer .footerSingle{font-size:var(--main-footer-font)!important;line-height:1!important}
+.mainLayer .roundTotalCell{font-size:var(--main-round-total-font)!important;line-height:1!important}
+.mainLayer .roundTotalCell.roundShadow{font-size:var(--main-round-old-font)!important}
+.mainLayer .grandTotal{font-size:var(--main-grand-font)!important;line-height:1!important}
+.mainLayer .statsCheck{
+  appearance:none;-webkit-appearance:none;
+  width:calc(18px * var(--main-dp-scale))!important;
+  height:calc(18px * var(--main-dp-scale))!important;
+  min-width:calc(18px * var(--main-dp-scale))!important;
+  min-height:calc(18px * var(--main-dp-scale))!important;
+  padding:0;margin:0;
+  border:calc(2px * var(--main-dp-scale)) solid rgba(255,255,255,.60)!important;
+  border-radius:calc(2px * var(--main-dp-scale))!important;
+  background:transparent;
+  display:grid;place-items:center;
+  color:#fff;cursor:pointer;
+  touch-action:manipulation;
+  box-shadow:none;
+}
+.mainLayer .statsCheck.checked{background:#4caf50;border-color:#4caf50!important}
+.mainLayer .statsCheck .mi{width:82%!important;height:82%!important;fill:#fff!important;filter:none!important}
+.mainLayer .statsCheck:focus-visible{outline:calc(2px * var(--main-dp-scale)) solid #ffd54f;outline-offset:calc(2px * var(--main-dp-scale))}
+.mainLayer .scoreCell.selected{border-width:calc(3px * var(--main-dp-scale))!important}
+
+/* ScoreCircleMenu.kt: 85 % der sichtbaren App-Breite, Button 24 %, Radius 32 %. */
+.overlay .wheelBox{max-width:none!important;max-height:none!important}
+.overlay .circleBtn{font-size:calc(var(--main-wheel-size,306px) * .108)!important}
+.overlay .circleBtn.selected{border-width:calc(3px * var(--main-dp-scale))!important}
+
+/* Desktop-Testmodus emuliert die Referenz des nativen Screens (360 x 780 dp). */
+@media (hover:hover) and (pointer:fine) and (min-width:700px){
+  :root{--phone-w:360px;--phone-h:min(780px,calc(100vh - 32px))}
+  .app{width:var(--phone-w)!important;height:var(--phone-h)!important}
+  .bg{width:var(--phone-w)!important;height:var(--phone-h)!important}
+  .scrim.show,.overlay.show,.drawerOverlay.show,.dialogLayer.show,.pageScreen{
+    width:var(--phone-w)!important;height:var(--phone-h)!important;max-width:var(--phone-w)!important;max-height:var(--phone-h)!important
+  }
+}
+
+/* v41 — Aktive Spiele und Beendete Spiele nach ActiveGamesScreen.kt / HistoryScreen.kt.
+   Alle adaptiven Compose-Werte skalieren proportional zur sichtbaren App-Breite / 360dp. */
+:root{
+  --games-scale:1;
+  --g4:4px;--g6:6px;--g8:8px;--g11:11px;--g12:12px;--g14:14px;--g16:16px;--g18:18px;--g20:20px;--g24:24px;--g48:48px;--g64:64px;--g180:180px;
+  --g-shadow:1.2px 1.2px 1.8px rgba(0,0,0,.50);
+}
+.pageScreen.gamesPage{
+  display:flex!important;
+  flex-direction:column!important;
+  background:#fff!important;
+  color:#000!important;
+  text-shadow:var(--g-shadow)!important;
+  overflow:hidden!important;
+}
+.gamesHeaderSurface{
+  flex:0 0 auto;
+  width:100%;
+  background:#fff;
+  box-shadow:0 calc(2px * var(--games-scale)) calc(5px * var(--games-scale)) rgba(0,0,0,.16);
+  position:relative;
+  z-index:5;
+}
+.gamesHeaderRow{
+  min-height:calc(80px * var(--games-scale));
+  display:flex;
+  align-items:center;
+  width:100%;
+  padding:calc(16px * var(--games-scale));
+  gap:calc(8px * var(--games-scale));
+}
+.gamesHeaderTitle{
+  flex:1;
+  min-width:0;
+  font-size:calc(20px * var(--games-scale));
+  font-weight:700;
+  line-height:1.05;
+  color:#000;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.gamesIconButton{
+  flex:0 0 calc(48px * var(--games-scale));
+  width:calc(48px * var(--games-scale));
+  height:calc(48px * var(--games-scale));
+  border:0;
+  padding:0;
+  background:transparent;
+  color:#000;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  text-shadow:none;
+}
+.gamesIconButton .mi{
+  width:calc(24px * var(--games-scale));
+  height:calc(24px * var(--games-scale));
+  fill:currentColor;
+  filter:drop-shadow(calc(1px * var(--games-scale)) calc(1px * var(--games-scale)) calc(1.5px * var(--games-scale)) rgba(0,0,0,.25));
+}
+.gamesSearchField{
+  flex:1;
+  min-width:0;
+  height:calc(56px * var(--games-scale));
+  border:calc(1px * var(--games-scale)) solid #777;
+  border-radius:calc(12px * var(--games-scale));
+  display:flex;
+  align-items:center;
+  padding-left:calc(14px * var(--games-scale));
+  background:#fff;
+}
+.gamesSearchField:focus-within{border-color:#000;border-width:calc(2px * var(--games-scale))}
+.gamesSearchField input{
+  flex:1;
+  min-width:0;
+  height:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#000;
+  font-size:calc(16px * var(--games-scale));
+  text-shadow:var(--g-shadow);
+  padding:0;
+}
+.gamesSearchField input::placeholder{color:#777}
+.gamesSearchField .gamesIconButton{flex-basis:calc(46px * var(--games-scale));width:calc(46px * var(--games-scale));height:100%}
+.gamesSuggestions{
+  display:flex;
+  gap:calc(8px * var(--games-scale));
+  overflow-x:auto;
+  padding:0 calc(16px * var(--games-scale)) calc(12px * var(--games-scale));
+  scrollbar-width:none;
+  touch-action:pan-x!important;
+}
+.gamesSuggestions::-webkit-scrollbar{display:none}
+.gamesSuggestionChip{
+  border:calc(1px * var(--games-scale)) solid rgba(0,0,0,.16);
+  border-radius:999px;
+  background:#f5f5f5;
+  color:#222;
+  white-space:nowrap;
+  min-height:calc(32px * var(--games-scale));
+  padding:0 calc(12px * var(--games-scale));
+  font-size:calc(13px * var(--games-scale));
+  font-weight:700;
+  text-shadow:var(--g-shadow);
+}
+.gamesList{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  padding:calc(16px * var(--games-scale));
+  display:flex;
+  flex-direction:column;
+  gap:calc(12px * var(--games-scale));
+  touch-action:pan-y!important;
+  overscroll-behavior-y:contain;
+}
+.gamesSwipeWrap{
+  position:relative;
+  flex:0 0 auto;
+  border-radius:calc(16px * var(--games-scale));
+  overflow:hidden;
+  touch-action:pan-y!important;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.gamesSwipeBg{
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:transparent;
+  pointer-events:none;
+  transition:background .06s linear;
+}
+.gamesSwipeAction{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:calc(72px * var(--games-scale));
+  display:grid;
+  place-items:center;
+  color:#fff;
+  opacity:0;
+  transition:opacity .06s linear;
+}
+.gamesSwipeAction.left{left:0}
+.gamesSwipeAction.right{right:0}
+.gamesSwipeAction .mi{
+  width:calc(24px * var(--games-scale));
+  height:calc(24px * var(--games-scale));
+  fill:#fff;
+  filter:drop-shadow(calc(1.5px * var(--games-scale)) calc(1.5px * var(--games-scale)) 0 rgba(0,0,0,.30));
+}
+.gamesSwipeWrap.swipeRight.historySwipe .gamesSwipeBg{background:#2196f3}
+.gamesSwipeWrap.swipeLeft.historySwipe .gamesSwipeBg{background:#f44336}
+.gamesSwipeWrap.swipeRight.activeSwipe .gamesSwipeBg{background:#4caf50}
+.gamesSwipeWrap.swipeLeft.activeSwipe .gamesSwipeBg{background:#f44336}
+.gamesSwipeWrap.swipeRight .gamesSwipeAction.left,.gamesSwipeWrap.swipeLeft .gamesSwipeAction.right{opacity:1}
+.nativeGameCard{
+  position:relative;
+  z-index:2;
+  width:100%;
+  border:0;
+  border-radius:calc(16px * var(--games-scale));
+  background:#fff;
+  color:#000;
+  box-shadow:0 calc(2px * var(--games-scale)) calc(7px * var(--games-scale)) rgba(0,0,0,.22);
+  padding:calc(16px * var(--games-scale));
+  cursor:pointer;
+  touch-action:pan-y!important;
+  will-change:transform;
+  text-shadow:var(--g-shadow);
+}
+.nativeGameCard.swiping{transition:none!important}
+.nativeGameHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:calc(10px * var(--games-scale));
+}
+.nativeGameInfo{flex:1;min-width:0}
+.nativeGameTitleRow{display:flex;align-items:center;gap:calc(6px * var(--games-scale));min-width:0}
+.nativeGameTitle{
+  min-width:0;
+  font-size:calc(16px * var(--games-scale));
+  line-height:1.08;
+  font-weight:700;
+  color:#000;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.nativeStatusIcon,.nativeStatsIcon{flex:0 0 calc(16px * var(--games-scale));width:calc(16px * var(--games-scale));height:calc(16px * var(--games-scale));text-shadow:none}
+.nativeStatusIcon .mi,.nativeStatsIcon .mi{width:100%;height:100%;fill:currentColor}
+.nativeStatsIcon{color:#4caf50}
+.nativeGameMeta{
+  display:flex;
+  align-items:center;
+  gap:calc(4px * var(--games-scale));
+  margin-top:calc(2px * var(--games-scale));
+  color:#777;
+  font-size:calc(12px * var(--games-scale));
+  line-height:1.15;
+  font-weight:400;
+  min-width:0;
+}
+.nativeGameMeta .mi{width:calc(12px * var(--games-scale));height:calc(12px * var(--games-scale));fill:#777;filter:drop-shadow(calc(1px * var(--games-scale)) calc(1px * var(--games-scale)) 0 rgba(0,0,0,.18));flex:0 0 auto}
+.nativeGameMeta span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nativeWinner{
+  flex:0 1 42%;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:calc(4px * var(--games-scale));
+  font-size:calc(12px * var(--games-scale));
+  font-weight:700;
+  line-height:1.1;
+  color:#000;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.nativeWinner .mi{width:calc(16px * var(--games-scale));height:calc(16px * var(--games-scale));fill:#ffd700;flex:0 0 auto}
+.nativeActivePlayers{
+  margin-top:calc(8px * var(--games-scale));
+  font-size:calc(11px * var(--games-scale));
+  line-height:1.25;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.nativeGameDivider{height:1px;background:rgba(211,211,211,.30);margin:calc(12px * var(--games-scale)) 0}
+.nativePlayerBlock{padding:calc(4px * var(--games-scale)) 0}
+.nativePlayerLine{display:flex;align-items:center;justify-content:space-between;gap:calc(8px * var(--games-scale))}
+.nativePlayerName{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:calc(4px * var(--games-scale));
+  color:var(--player-color,#333);
+  font-size:calc(16px * var(--games-scale));
+  line-height:1.1;
+  font-weight:700;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.nativePlayerName .mi{width:calc(14px * var(--games-scale));height:calc(14px * var(--games-scale));fill:#ffd700;flex:0 0 auto}
+.nativePlayerPoints{font-size:calc(18px * var(--games-scale));line-height:1;font-weight:800;white-space:nowrap}
+.nativeRounds{margin-top:calc(2px * var(--games-scale));padding-left:var(--round-indent,0);font-size:calc(12px * var(--games-scale));line-height:1.2;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nativePreviewRow{
+  width:100%;
+  height:calc(180px * var(--games-scale));
+  display:flex;
+  gap:calc(8px * var(--games-scale));
+}
+.nativePreviewRow .scorePreview{height:100%!important;min-width:0;flex:1;border-radius:calc(12px * var(--games-scale))!important}
+.gamesEmpty{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:calc(280px * var(--games-scale));
+  color:#777;
+  text-align:center;
+}
+.gamesEmptyInner{display:flex;flex-direction:column;align-items:center}
+.gamesEmptyIcon{position:relative;width:calc(64px * var(--games-scale));height:calc(64px * var(--games-scale));color:rgba(128,128,128,.50)}
+.gamesEmptyIcon .mi{position:absolute;inset:0;width:100%;height:100%;fill:currentColor}
+.gamesEmptyIcon .shadowIcon{color:rgba(0,0,0,.10);transform:translate(calc(2px * var(--games-scale)),calc(2px * var(--games-scale)))}
+.gamesEmptyText{margin-top:calc(16px * var(--games-scale));font-size:calc(14px * var(--games-scale));color:#777;font-weight:400}
+
+@media (max-width:350px){.nativeWinner{max-width:34%}}
+
+
+
+/* v44: v41 stable base + native ScoreCircleMenu animation from v43 */
+body.scoreCycleOpen .mainLayer{transition-duration:300ms!important}
+body.scoreCycleOpen .scrim{transition-duration:300ms!important}
+.nativeScoreOverlay{background:rgba(0,0,0,0)}
+.nativeScoreCycle{pointer-events:none}
+.nativeScoreCycle .scoreButtonHolder{
+  position:absolute;left:38%;top:38%;width:24%;height:24%;
+  pointer-events:none;will-change:transform;transform:translate3d(0,0,0)
+}
+.nativeScoreCycle .scoreButtonHolder>.circleBtn{
+  position:absolute!important;inset:0!important;left:auto!important;top:auto!important;
+  width:100%!important;height:100%!important;opacity:0;transform:scale(.8);
+  animation:none!important;will-change:transform,opacity;pointer-events:auto
+}
+.nativeScoreCycle .circleBtn:active{filter:brightness(.96)}
+.flyingScore.nativeFlyingScore{
+  width:40px!important;height:40px!important;font-size:22px!important;line-height:40px!important;
+  opacity:1;transform:scale(1.4);animation:nativeFlyScore 450ms cubic-bezier(.4,0,.2,1) forwards!important;
+  transform-origin:center center;will-change:left,top,transform,opacity
+}
+@keyframes nativeFlyScore{
+  from{transform:scale(1.4);opacity:1}
+  to{left:var(--tx);top:var(--ty);transform:scale(1);opacity:.8}
+}
+
+/* v48 native tournament camera / gallery / crop / drawing workflow */
+body.mediaEditing{overflow:hidden;touch-action:none}
+.mediaPage{position:fixed;inset:0;left:0;right:0;width:100%;max-width:none;height:100vh;height:100dvh;transform:none;z-index:520;background:var(--tour-bg,#fff);color:var(--tour-fg,#000);text-shadow:var(--shadow);overflow:hidden;box-sizing:border-box}
+.mediaHeader{height:var(--tn-header-height,80px);display:grid;grid-template-columns:48px 1fr 48px;align-items:center;padding:calc(16px * var(--native-scale,1));gap:calc(8px * var(--native-scale,1));box-sizing:border-box;background:var(--tour-bg,#fff)}
+.mediaHeader button{width:48px;height:48px;border:0;background:transparent;color:inherit;padding:12px;display:grid;place-items:center;border-radius:50%}
+.mediaHeader button:active{background:rgba(128,128,128,.15)}
+.mediaHeader button .mi{width:24px;height:24px}
+.mediaHeader h1{margin:0;font-size:calc(20px * var(--native-scale,1));line-height:1.1;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mediaHeaderSpacer{width:48px;height:48px}
+.mediaSourceLayer{z-index:700!important}
+.mediaSourceDialog{width:min(320px,calc(100vw - 48px));max-width:100%;box-sizing:border-box;background:var(--tour-card,#fff);color:var(--tour-fg,#000);border-radius:24px;padding:24px;box-shadow:0 12px 30px rgba(0,0,0,.35);text-align:center;text-shadow:var(--shadow)}
+.mediaSourceIcon{width:54px;height:54px;margin:0 auto 8px;color:#4caf50}.mediaSourceIcon .mi{width:100%;height:100%}
+.mediaSourceDialog h2{font-size:20px;margin:0 0 20px}.mediaSourceActions{display:flex;gap:12px}
+.mediaSourceActions button{flex:1;min-height:86px;border:0;border-radius:18px;background:var(--tour-card2,#f3f3f3);color:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:700;box-shadow:0 3px 7px rgba(0,0,0,.16)}
+.mediaSourceActions .mi{width:30px;height:30px}.mediaCancel{margin-top:14px;border:0;background:transparent;color:inherit;font-size:15px;font-weight:700;padding:10px 18px}
+.mediaCropBody,.mediaDrawBody{height:calc(100% - var(--tn-header-height,80px));min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;overflow:hidden}
+.mediaCropFrame,.mediaDrawFrame{position:relative;width:min(100%,calc((100dvh - var(--tn-header-height,80px) - 100px) * .75));max-width:100%;max-height:calc(100dvh - var(--tn-header-height,80px) - 100px);aspect-ratio:3/4;background:#333;border-radius:8px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.25);touch-action:none;box-sizing:border-box}
+.mediaCropFrame canvas,.mediaDrawFrame canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.mediaCropHelp{font-size:12px;color:var(--tour-muted,#666);margin-top:14px;text-shadow:none}
+.mediaColorRow{width:min(100%,420px);display:flex;align-items:center;gap:16px;padding:20px 8px 10px;box-sizing:border-box}.mediaColorDot{width:32px;height:32px;border-radius:50%;border:2px solid rgba(128,128,128,.6);flex:0 0 32px}.mediaHueBar{height:32px;flex:1;border-radius:16px;background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);position:relative;touch-action:none}.mediaHueBar i{position:absolute;left:0;top:50%;width:28px;height:28px;transform:translate(-50%,-50%);border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.4)}
+.mediaDrawTools{width:min(100%,420px);display:flex;justify-content:space-around;padding:8px 0 4px}.mediaDrawTools button{border:0;background:transparent;color:inherit;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;font-weight:700}.mediaDrawTools .mi{width:28px;height:28px}
+.mediaGalleryPage{overflow:hidden}.mediaGalleryGrid{height:calc(100% - var(--tn-header-height,80px));overflow-y:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-flow:row;gap:calc(12px * var(--native-scale,1));padding:calc(16px * var(--native-scale,1));box-sizing:border-box;align-content:start;overscroll-behavior:contain}
+.mediaGalleryItem,.mediaGalleryAdd{position:relative;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--tour-card2,#eee);border:0;color:var(--tour-fg,#000);box-shadow:0 2px 7px rgba(0,0,0,.15);touch-action:none;transition:transform .17s ease,opacity .17s ease,order .17s ease}
+.mediaGalleryItem>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}.mediaThumbSkeleton{position:absolute;inset:0;display:grid;place-items:center;color:rgba(128,128,128,.45)}.mediaThumbSkeleton .mi{width:38px;height:38px}
+.mediaCardActions{position:absolute;z-index:3;left:4px;right:4px;top:4px;display:flex;justify-content:space-between}.mediaCardActions button{width:28px;height:28px;border:0;border-radius:50%;padding:6px;background:rgba(255,255,255,.78);color:#222;box-shadow:0 1px 4px rgba(0,0,0,.25)}.mediaCardActions .mi{width:16px;height:16px}
+.mediaGalleryAdd{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:rgba(128,128,128,.58);border:1px solid rgba(128,128,128,.18);box-shadow:none;font-size:11px}.mediaGalleryAdd .mi{width:34px;height:34px}
+.mediaDragSource{opacity:.28}.mediaDropTarget{outline:3px solid #4caf50;outline-offset:-3px}.mediaGalleryGhost{position:fixed;z-index:900;pointer-events:none;overflow:hidden;border-radius:12px;opacity:.88;box-shadow:0 12px 26px rgba(0,0,0,.45);transition:transform .08s linear}.mediaGalleryGhost>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.mediaGalleryGhost .mediaCardActions{display:none}
+.mediaPreviewOverlay{position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.88);display:grid;place-items:center;overflow:hidden;touch-action:none}.mediaPreviewOverlay>button{position:absolute;z-index:2;top:max(16px,env(safe-area-inset-top));right:16px;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.75);color:#111;padding:10px}.mediaPreviewOverlay>button .mi{width:24px;height:24px}.mediaPreviewOverlay>img{max-width:94%;max-height:88%;object-fit:contain;will-change:transform;touch-action:none;user-select:none;-webkit-user-drag:none}
+.cameraBtn{position:relative;overflow:hidden}.cameraBtn.hasMedia{padding:0!important;background:#111!important}.cameraBtn.hasMedia>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.mediaBrushBadge{position:absolute;right:2px;bottom:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.68);color:#fff;display:grid;place-items:center;padding:3px}.mediaBrushBadge .mi{width:12px!important;height:12px!important}.mediaCountBadge{position:absolute;left:3px;bottom:3px;min-width:18px;height:18px;border-radius:9px;background:rgba(0,0,0,.72);color:white;font-size:10px;line-height:18px;text-align:center;text-shadow:none;padding:0 4px;box-sizing:border-box}
+.tournamentView .cameraBtn.hasMedia{opacity:1!important;cursor:pointer}.tournamentView .cameraBtn.hasMedia .mediaBrushBadge{display:none}
+@media (min-width:700px){.mediaPage{width:393px;max-width:393px;height:min(852px,100dvh);top:0;bottom:auto;left:50%;right:auto;transform:translateX(-50%);box-shadow:0 0 0 7px #222,0 20px 45px rgba(0,0,0,.35)}.mediaPreviewOverlay{width:393px;height:min(852px,100dvh);left:50%;right:auto;transform:translateX(-50%)}}
+
+
+
+@media (max-width:359px){
+  .mediaSourceDialog{width:calc(100vw - 32px);padding:20px}
+  .mediaSourceActions{gap:8px}
+  .mediaSourceActions button{min-width:0;min-height:78px;font-size:14px}
+  .mediaHeader{grid-template-columns:44px minmax(0,1fr) 44px;padding-left:10px;padding-right:10px}
+  .mediaHeader button,.mediaHeaderSpacer{width:44px;height:44px}
+  .mediaCropBody,.mediaDrawBody{padding-left:12px;padding-right:12px}
+}
+
+/* v52: native 180dp bitmap previews restored for completed games.
+   Matches HistoryScreen.kt: 180dp row, 8dp gap, 12dp radius, ContentScale.Crop. */
+.nativeBitmapHost{
+  min-height:calc(180px * var(--games-scale,1));
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.bitmapLoading{
+  width:100%;
+  min-height:calc(72px * var(--games-scale,1));
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:calc(9px * var(--games-scale,1));
+  font-size:calc(12px * var(--games-scale,1));
+  color:#777;
+  text-shadow:none;
+}
+.bitmapSpinner{
+  width:calc(24px * var(--games-scale,1));
+  height:calc(24px * var(--games-scale,1));
+  border:calc(2px * var(--games-scale,1)) solid rgba(120,120,120,.25);
+  border-top-color:#777;
+  border-radius:50%;
+  animation:bitmapSpin .75s linear infinite;
+}
+@keyframes bitmapSpin{to{transform:rotate(360deg)}}
+.bitmapError{
+  padding:calc(16px * var(--games-scale,1));
+  font-size:calc(12px * var(--games-scale,1));
+  color:#888;
+  text-shadow:none;
+  text-align:center;
+}
+.nativeBitmapPreviewRow{
+  width:100%;
+  height:calc(180px * var(--games-scale,1));
+  display:flex;
+  gap:calc(8px * var(--games-scale,1));
+}
+.nativeBitmapThumb{
+  position:relative;
+  flex:1 1 0;
+  min-width:0;
+  height:100%;
+  padding:0;
+  border:0;
+  border-radius:calc(12px * var(--games-scale,1));
+  overflow:hidden;
+  background:rgba(0,0,0,.05);
+  box-shadow:none;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.nativeBitmapThumb img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  max-width:none;
+  max-height:none;
+  object-fit:cover;
+  display:block;
+  pointer-events:none;
+}
+.nativeBitmapShade{position:absolute;inset:0;background:rgba(0,0,0,.15);pointer-events:none}
+.nativeBitmapOverlayIcon{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  filter:drop-shadow(1px 2px 2px rgba(0,0,0,.55));
+  pointer-events:none;
+}
+.nativeBitmapOverlayIcon .mi{
+  width:calc(24px * var(--games-scale,1));
+  height:calc(24px * var(--games-scale,1));
+  fill:currentColor;
+}
+.nativeBitmapThumb:active{filter:brightness(.94)}
+.bitmapFullscreenOverlay{
+  position:fixed;
+  inset:0;
+  z-index:1400;
+  background:#000;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.bitmapFullscreenStage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none}
+.bitmapFullscreenStage img{
+  max-width:100%;
+  max-height:100%;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  transform-origin:center center;
+  will-change:transform;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  cursor:grab;
+}
+.bitmapFullscreenStage img:active{cursor:grabbing}
+.bitmapTopButton{
+  position:absolute;
+  top:max(16px,env(safe-area-inset-top));
+  z-index:4;
+  width:48px;
+  height:48px;
+  border:0;
+  border-radius:50%;
+  background:rgba(0,0,0,.28);
+  color:#fff;
+  padding:12px;
+  display:grid;
+  place-items:center;
+  filter:drop-shadow(1px 2px 2px rgba(0,0,0,.55));
+}
+.bitmapTopButton.save{left:16px}.bitmapTopButton.close{right:16px}.bitmapTopButton .mi{width:24px;height:24px;fill:currentColor}
+.bitmapPagerDots{
+  position:absolute;
+  z-index:4;
+  left:0;
+  right:0;
+  bottom:max(18px,env(safe-area-inset-bottom));
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  pointer-events:none;
+}
+.bitmapPagerDots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.5)}
+.bitmapPagerDots i.active{background:#fff}
+@media (min-width:700px){
+  .bitmapFullscreenOverlay{
+    width:360px;
+    height:min(780px,calc(100vh - 32px));
+    left:50%;
+    right:auto;
+    transform:translateX(-50%);
+    box-shadow:0 0 0 7px #222,0 20px 45px rgba(0,0,0,.35);
+  }
+}
+
+
+/* v53: nativer Score-Cycle und sofortiges Entschärfen nach der Auswahl. */
+.nativeScoreOverlay{
+  background:rgba(0,0,0,0);
+  animation:nativeScoreOverlayIn 200ms linear forwards;
+}
+@keyframes nativeScoreOverlayIn{to{background:rgba(0,0,0,.40)}}
+.nativeScoreCycle .scoreButtonHolder{transform:translate3d(0,0,0)}
+.nativeScoreCycle .circleBtn:active{transform:scale(1)!important;filter:brightness(.96)}
+.flyingScore.nativeFlyingScore{
+  text-rendering:geometricPrecision;
+  -webkit-font-smoothing:antialiased;
+  backface-visibility:hidden;
+}
+
+
+
+/* v56: nativer Gewinner-Badge und Ergebniskarte. */
+.winnerBadge{
+  position:absolute;
+  right:0;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:60;
+  width:calc(50px * var(--main-dp-scale,1));
+  height:calc(70px * var(--main-dp-scale,1));
+  border:0;
+  border-radius:calc(28px * var(--main-dp-scale,1)) 0 0 calc(28px * var(--main-dp-scale,1));
+  background:#ffd700;
+  color:#fff;
+  box-shadow:0 calc(4px * var(--main-dp-scale,1)) calc(8px * var(--main-dp-scale,1)) rgba(0,0,0,.30);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  padding:0;
+  animation:winnerBadgeEnter 220ms ease-out both;
+  transition:right 450ms cubic-bezier(.4,0,.2,1),width 450ms cubic-bezier(.4,0,.2,1),height 450ms cubic-bezier(.4,0,.2,1),border-radius 450ms cubic-bezier(.4,0,.2,1),background 450ms linear,box-shadow 450ms linear;
+}
+@keyframes winnerBadgeEnter{from{transform:translate(100%,-50%)}to{transform:translate(0,-50%)}}
+.winnerBadge .mi{position:absolute;width:calc(32px * var(--main-dp-scale,1));height:calc(32px * var(--main-dp-scale,1));transition:opacity 350ms ease;fill:currentColor}
+.winnerBadgeShadow{color:rgba(0,0,0,.20);transform:translate(calc(1.5px * var(--main-dp-scale,1)),calc(1.5px * var(--main-dp-scale,1)))}
+.winnerBadgeIcon{color:#fff}
+.winnerBadge.transitioning{
+  right:5%;
+  width:90%;
+  height:min(calc(450px * var(--main-dp-scale,1)),calc(100% - 40px));
+  border-radius:calc(28px * var(--main-dp-scale,1));
+  background:#fff;
+  box-shadow:none;
+  z-index:260;
+  animation:none;
+}
+.winnerBadge.transitioning span{opacity:0}
+.winnerOverlay{
+  position:fixed;
+  inset:0;
+  z-index:3000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(18px * var(--main-dp-scale,1));
+  pointer-events:auto;
+}
+.winnerOutside{position:absolute;inset:0}
+.winnerFireworks{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.winnerCard{
+  position:relative;
+  z-index:2;
+  width:90%;
+  max-height:94%;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  background:#fff;
+  color:#000;
+  border-radius:calc(28px * var(--main-dp-scale,1));
+  box-shadow:0 calc(12px * var(--main-dp-scale,1)) calc(28px * var(--main-dp-scale,1)) rgba(0,0,0,.38);
+  padding:calc(24px * var(--main-dp-scale,1));
+  text-align:center;
+  text-shadow:var(--shadow);
+  animation:winnerCardReveal 120ms ease-out both;
+  scrollbar-width:none;
+}
+.winnerCard::-webkit-scrollbar{display:none}
+@keyframes winnerCardReveal{from{opacity:.85}to{opacity:1}}
+.winnerShare{
+  position:absolute;
+  right:calc(8px * var(--main-dp-scale,1));
+  top:calc(8px * var(--main-dp-scale,1));
+  width:calc(48px * var(--main-dp-scale,1));
+  height:calc(48px * var(--main-dp-scale,1));
+  display:grid;
+  place-items:center;
+  border:0;
+  background:transparent;
+  color:#000;
+  padding:calc(12px * var(--main-dp-scale,1));
+}
+.winnerShare .mi{width:100%;height:100%;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.20))}
+.winnerTrophy{position:relative;width:calc(96px * var(--main-dp-scale,1));height:calc(96px * var(--main-dp-scale,1));margin:0 auto;display:grid;place-items:center}
+.winnerTrophy span{position:absolute;display:grid;place-items:center;animation:winnerTrophyPulse 1000ms cubic-bezier(.4,0,.2,1) infinite alternate}
+.winnerTrophy .mi{width:calc(80px * var(--main-dp-scale,1));height:calc(80px * var(--main-dp-scale,1))}
+.winnerTrophyShadow{color:rgba(0,0,0,.20);transform:translate(2px,2px)}
+.winnerTrophyGold{color:#ffd700}
+@keyframes winnerTrophyPulse{from{scale:1}to{scale:1.2}}
+.winnerCongrats{margin-top:calc(8px * var(--main-dp-scale,1));font-size:calc(20px * var(--main-dp-scale,1));font-weight:700;line-height:1.15}
+.winnerSystem{font-size:calc(12px * var(--main-dp-scale,1));color:#777;font-weight:700;margin-top:calc(2px * var(--main-dp-scale,1))}
+.winnerNames{margin-top:calc(16px * var(--main-dp-scale,1))}
+.winnerName{font-size:calc(24px * var(--main-dp-scale,1));font-weight:800;line-height:1.12}
+.winnerVerb{font-size:calc(16px * var(--main-dp-scale,1));font-weight:700;margin-top:calc(2px * var(--main-dp-scale,1))}
+.winnerRankingTitle{font-size:calc(18px * var(--main-dp-scale,1));font-weight:700;margin-top:calc(24px * var(--main-dp-scale,1));margin-bottom:calc(4px * var(--main-dp-scale,1))}
+.winnerRankRow{display:flex;align-items:center;justify-content:space-between;gap:calc(12px * var(--main-dp-scale,1));width:100%;padding:calc(8px * var(--main-dp-scale,1)) 0;text-align:left;opacity:0;transform:translateX(calc(-20px * var(--main-dp-scale,1)));animation:winnerRankIn 300ms ease-out var(--winner-row-delay) forwards}
+@keyframes winnerRankIn{to{opacity:1;transform:translateX(0)}}
+.winnerRankMain{min-width:0;flex:1}
+.winnerRankName{font-size:calc(18px * var(--main-dp-scale,1));font-weight:700;line-height:1.12;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.winnerRounds{font-size:calc(12px * var(--main-dp-scale,1));color:#777;font-weight:700;line-height:1.2;margin-top:calc(2px * var(--main-dp-scale,1));white-space:nowrap}
+.winnerRankPoints{font-size:calc(18px * var(--main-dp-scale,1));font-weight:800;white-space:nowrap;text-align:right}
+.winnerActions{margin-top:calc(24px * var(--main-dp-scale,1))}
+.winnerActionRow{display:flex;gap:8px;width:100%}
+.winnerAction{
+  min-height:calc(48px * var(--main-dp-scale,1));
+  border:0;
+  border-radius:20px;
+  color:#fff;
+  text-shadow:var(--shadow);
+  box-shadow:0 4px 7px rgba(0,0,0,.28);
+  font-size:calc(12px * var(--main-dp-scale,1));
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:calc(4px * var(--main-dp-scale,1));
+  padding:0 calc(4px * var(--main-dp-scale,1));
+}
+.winnerAction .mi{width:calc(24px * var(--main-dp-scale,1));height:calc(24px * var(--main-dp-scale,1));filter:drop-shadow(1px 1px 0 rgba(0,0,0,.30))}
+.winnerAction:active{transform:scale(.97)}
+.winnerActionRow .winnerAction{flex:1;min-width:0}
+.winnerNext{background:#2196f3}.winnerNew{background:#4caf50}.winnerEnd{background:#f44336;width:100%;margin-top:calc(12px * var(--main-dp-scale,1));font-size:calc(14px * var(--main-dp-scale,1));gap:calc(8px * var(--main-dp-scale,1))}
+@media (hover:hover) and (pointer:fine) and (min-width:700px){
+  .winnerOverlay{inset:auto;left:50%;top:50%;width:var(--phone-w);height:var(--phone-h);transform:translate(-50%,-50%);border-radius:28px;overflow:hidden}
+}
+
+/* v59: Vollbild-Hintergrundeditor nach BackgroundImageEditScreen.kt */
+.settingsBgActions{display:flex;gap:8px;margin-top:12px}.settingsBgActions .chooseBg{flex:1;width:auto;margin:0;height:36px;font-size:12px;border-radius:10px}.settingsBgActions .chooseBg.reset{margin:0;background:rgba(244,67,54,.12);color:rgba(190,25,25,.85)}
+.backgroundEditor{position:fixed;inset:0;z-index:1200;background:#000;color:#fff;overflow:hidden;text-shadow:2px 2px 3px rgba(0,0,0,.55)}
+.bgEditCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#000}
+.bgEditTop{position:absolute;z-index:3;left:0;right:0;top:0;min-height:80px;padding:max(16px,env(safe-area-inset-top)) 16px 12px;display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:8px}
+.bgEditTop h2{margin:0;text-align:center;font-size:20px;line-height:1.1;color:#fff;text-shadow:2px 2px 3px rgba(0,0,0,.55)}
+.bgEditTopBtn{width:48px;height:48px;border:0;border-radius:50%;background:rgba(0,0,0,.30);color:#fff;padding:12px;display:grid;place-items:center}.bgEditTopBtn .mi{width:24px;height:24px;fill:currentColor}.bgEditTopBtn:disabled{opacity:.72}.bgEditTopBtn.processing{pointer-events:none}
+.bgEditSpinner{width:24px;height:24px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:bgEditSpin .75s linear infinite}
+.bgEditBottom{position:absolute;z-index:3;left:0;right:0;bottom:0;padding:42px 16px max(32px,env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,rgba(0,0,0,.72));display:flex;flex-direction:column;gap:8px;align-items:center}
+.bgEditControl{width:100%;min-height:76px;padding:0 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.bgEditSliderLabel{font-size:14px;font-weight:700;margin-bottom:7px;color:#fff}.bgEditRange{width:100%;height:34px;margin:0;accent-color:#ffd54f;touch-action:none}.bgEditRange::-webkit-slider-thumb{width:20px;height:20px}.bgEditRange::-moz-range-thumb{width:20px;height:20px;background:#ffd54f;border:0}
+.bgEditModes{width:100%;display:flex;justify-content:space-evenly;align-items:center}.bgEditMode{width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;padding:12px;display:grid;place-items:center;transition:background .18s ease,color .18s ease,transform .12s ease}.bgEditMode.active{background:#ffd54f;color:#000}.bgEditMode:active{transform:scale(.96)}.bgEditMode .mi{width:24px;height:24px;fill:currentColor;filter:none}
+.bgEditPresets{width:100%;display:flex;gap:12px;overflow-x:auto;padding:8px 0 10px 0;scrollbar-width:none}.bgEditPresets::-webkit-scrollbar{display:none}.bgEditPreset{flex:0 0 auto;border:0;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font-size:14px;font-weight:700;padding:8px 16px;white-space:nowrap}.bgEditPreset.active{background:#ffd54f;color:#000}
+@keyframes bgEditSpin{to{transform:rotate(360deg)}}
+@media (orientation:landscape) and (max-height:560px){.bgEditTop{min-height:64px;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:8px}.bgEditBottom{padding-top:18px;padding-bottom:max(12px,env(safe-area-inset-bottom));gap:2px}.bgEditControl{min-height:58px}.bgEditMode{width:42px;height:42px;padding:10px}}
+
+/* v60: Native Speichern-/Verwerfen-Abfrage für geänderte Turniernotizen */
+.tournamentExitLayer{background:rgba(0,0,0,.38)}
+.tournamentExitDialog{width:min(82vw,380px);border-radius:24px;padding:24px}
+.tournamentExitDialog h2{font-size:20px;margin:0 0 12px}
+.tournamentExitDialog p{font-size:16px;line-height:1.35;margin:0 0 18px}
+.tournamentExitDialog .confirmActions{margin-top:0;gap:10px}
+.tournamentExitDialog .pillButton{height:48px;border-radius:20px;font-size:16px}
+.tourExitLight .tournamentExitDialog{background:#fff;color:#111}
+.tourExitDark .tournamentExitDialog{background:#24262d;color:#f7f7f7}
+
+/* v63: Dropdown-Skalierung und Spieler-Dialog direkt nach ScoreTable.kt,
+   TopAppBar.kt und PlayerDialogs.kt der nativen Compose-App. */
+.systemMenu,.roundMenu{
+  --native-menu-scale:var(--main-dp-scale,1);
+  position:fixed!important;
+  z-index:265!important;
+  width:max-content!important;
+  min-width:112px!important;
+  max-width:min(280px,calc(100vw - 16px))!important;
+  padding:8px 0!important;
+  overflow:hidden!important;
+  border-radius:4px!important;
+  background:#fff!important;
+  color:#000!important;
+  font-family:Calibri,Arial,sans-serif!important;
+  text-shadow:var(--main-shadow,.8px .8px 1.2px rgba(0,0,0,.52))!important;
+  box-shadow:0 5px 5px -3px rgba(0,0,0,.20),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12)!important;
+}
+.systemItem{
+  min-height:48px!important;
+  padding:7px 12px!important;
+  display:flex!important;
+  align-items:center!important;
+  white-space:pre-line!important;
+  font-size:calc(14px * var(--native-menu-scale))!important;
+  font-weight:400!important;
+  line-height:1.15!important;
+}
+.systemItem:active{background:rgba(0,0,0,.08)!important}
+.roundMenu{min-width:112px!important}
+.roundItem{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  height:calc(48px * var(--native-menu-scale))!important;
+  min-height:calc(48px * var(--native-menu-scale))!important;
+  padding:0!important;
+  overflow:hidden!important;
+  touch-action:none!important;
+  cursor:pointer!important;
+  --round-swipe-alpha:0;
+}
+.roundAddItem{
+  height:48px!important;
+  min-height:48px!important;
+  touch-action:manipulation!important;
+}
+.roundSwipeBackground{
+  position:absolute!important;
+  inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  padding:0 calc(16px * var(--native-menu-scale))!important;
+  background:rgba(244,67,54,var(--round-swipe-alpha))!important;
+  color:#fff!important;
+  text-shadow:none!important;
+}
+.roundItem.swipeRight .roundSwipeBackground{justify-content:flex-start!important}
+.roundDeleteIcon{
+  width:24px!important;
+  height:24px!important;
+  display:grid!important;
+  place-items:center!important;
+  transform:scale(.5);
+  transform-origin:center;
+  will-change:transform;
+}
+.roundDeleteIcon .mi{width:24px!important;height:24px!important;fill:currentColor!important}
+.roundItemForeground{
+  position:absolute!important;
+  inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:calc(8px * var(--native-menu-scale))!important;
+  padding:0 12px!important;
+  background:transparent!important;
+  color:#000!important;
+  font-size:14px!important;
+  font-weight:400!important;
+  line-height:1.2!important;
+  will-change:transform;
+}
+.roundItem:not(.roundSwiping):active .roundItemForeground{background:rgba(0,0,0,.08)!important}
+.roundItem .bigPlus{width:24px!important;height:24px!important;font-size:0!important;line-height:0!important;display:grid!important;place-items:center!important;flex:0 0 24px!important}
+.roundItem .bigPlus .mi{width:24px!important;height:24px!important;fill:currentColor!important}
+
+.playerDialog{
+  width:min(280px,calc(100vw - 48px))!important;
+  max-width:280px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:24px!important;
+  background:rgba(255,255,255,.40)!important;
+  color:#000!important;
+  text-shadow:var(--main-shadow,.8px .8px 1.2px rgba(0,0,0,.52))!important;
+  box-shadow:0 11px 15px -7px rgba(0,0,0,.20),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12)!important;
+}
+.playerDialog h2{
+  margin:0!important;
+  padding:24px 24px 0!important;
+  color:#000!important;
+  font-size:24px!important;
+  font-weight:700!important;
+  line-height:1.2!important;
+}
+.playerDialogBody{padding:16px 24px 24px!important}
+.playerDialog .nameInput{
+  display:block!important;
+  width:100%!important;
+  height:56px!important;
+  margin:0 0 16px!important;
+  padding:0 16px!important;
+  border:0!important;
+  border-radius:12px!important;
+  background:var(--dialog-color,#2836a3)!important;
+  color:#fff!important;
+  font-size:16px!important;
+  font-weight:700!important;
+  line-height:1!important;
+  text-shadow:var(--main-shadow,.8px .8px 1.2px rgba(0,0,0,.52))!important;
+}
+.playerDialog .nameInput::placeholder{color:rgba(255,255,255,.70)!important;font-size:16px!important;font-weight:400!important}
+.playerDialog .hueBar{
+  position:relative!important;
+  height:45px!important;
+  margin:0!important;
+  overflow:hidden!important;
+  border-radius:8px!important;
+  background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)!important;
+}
+.playerDialog .hueKnob{
+  position:absolute!important;
+  top:50%!important;
+  width:27px!important;
+  height:27px!important;
+  margin:-13.5px 0 0 -13.5px!important;
+  border:3px solid #fff!important;
+  border-radius:50%!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  pointer-events:none!important;
+}
+.playerDialog .dialogActions{
+  display:flex!important;
+  width:100%!important;
+  gap:8px!important;
+  margin:0!important;
+  padding:8px!important;
+}
+.playerDialog .pillButton{
+  min-width:0!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:0 8px!important;
+  border-radius:20px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:4px!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  line-height:1!important;
+  box-shadow:0 4px 5px rgba(0,0,0,.22)!important;
+}
+.playerDialog.addPlayerDialog .pillButton{gap:8px!important}
+.playerDialog .pillButton .mi{width:18px!important;height:18px!important;fill:currentColor!important;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.30))!important}
+@media (max-width:319px){.playerDialog{width:calc(100vw - 32px)!important}.playerDialog h2{padding-left:20px!important;padding-right:20px!important}.playerDialogBody{padding-left:20px!important;padding-right:20px!important}}
+
+
+
+/* v65: vollständiger visueller Quellcode-Abgleich mit der nativen Compose-App.
+   Korrigiert verbleibende Größen-, Farb-, Schatten- und Material-Abweichungen. */
+:root{
+  --native-text-shadow:.72px .72px 1.08px rgba(0,0,0,.50);
+  --native-green:#4caf50;
+  --native-red:#f44336;
+  --native-pure-red:#ff0000;
+  --native-blue:#2196f3;
+  --native-amber:#ffb300;
+  --native-gold:#ffd54f;
+  --native-cycle-gold:#f3cb0c;
+  --native-light-gray:#d3d3d3;
+}
+
+/* Hauptansicht */
+.mainLayer>.topbar .logo{filter:none!important}
+.mainLayer .leftCell.current{color:#000!important}
+.mainLayer .roundShadow{
+  filter:none!important;
+  box-shadow:inset 0 0 0 999px rgba(0,0,0,.15)!important;
+}
+.mainLayer .scoreCell.roundShadow:active{box-shadow:inset 0 0 0 999px rgba(0,0,0,.15)!important}
+.nativeScoreCycle .circleBtn.selected{border-color:var(--native-cycle-gold)!important;color:var(--native-cycle-gold)!important}
+
+/* NavigationDrawer.kt */
+.drawerPanel{
+  width:75%!important;
+  max-width:none!important;
+  background:rgba(255,255,255,.40)!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+.drawerHead{
+  height:auto!important;
+  min-height:0!important;
+  padding:calc(30px * var(--main-dp-scale,1)) calc(20px * var(--main-dp-scale,1)) calc(20px * var(--main-dp-scale,1))!important;
+  gap:calc(12px * var(--main-dp-scale,1))!important;
+  border-bottom:1px solid rgba(0,0,0,.10)!important;
+}
+.drawerHead img{width:calc(40px * var(--main-dp-scale,1))!important;height:calc(40px * var(--main-dp-scale,1))!important;filter:none!important}
+.drawerTitle{font-size:calc(18px * var(--main-dp-scale,1))!important;line-height:calc(20 / 18)!important;font-weight:700!important}
+.drawerTopItems{padding:calc(10px * var(--main-dp-scale,1)) 0 0!important}
+.drawerBottomItems{padding:0!important}
+.drawerSpacer{min-height:calc(8px * var(--main-dp-scale,1))!important}
+.drawerItem{
+  min-height:0!important;
+  gap:calc(16px * var(--main-dp-scale,1))!important;
+  padding:calc(10px * var(--main-dp-scale,1)) calc(20px * var(--main-dp-scale,1))!important;
+  font-size:calc(14px * var(--main-dp-scale,1))!important;
+  line-height:1.2!important;
+}
+.drawerIcon{width:calc(24px * var(--main-dp-scale,1))!important;flex-basis:calc(24px * var(--main-dp-scale,1))!important;height:calc(24px * var(--main-dp-scale,1))!important}
+.drawerPanel .drawerIcon .mi{width:100%!important;height:100%!important;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.30))!important}
+.badge{min-width:calc(20px * var(--main-dp-scale,1))!important;width:calc(20px * var(--main-dp-scale,1))!important;height:calc(20px * var(--main-dp-scale,1))!important;font-size:calc(11px * var(--main-dp-scale,1))!important;padding:0!important}
+.drawerDivider{height:1px!important;background:rgba(0,0,0,.10)!important;margin:calc(10px * var(--main-dp-scale,1)) 0!important}
+.drawerFooter{height:auto!important;min-height:0!important;padding:0 calc(20px * var(--main-dp-scale,1)) calc(10px * var(--main-dp-scale,1)) calc(8px * var(--main-dp-scale,1))!important}
+.gear{width:calc(40px * var(--main-dp-scale,1))!important;height:calc(40px * var(--main-dp-scale,1))!important;padding:calc(7px * var(--main-dp-scale,1))!important;font-size:0!important}
+.gear .mi{width:calc(26px * var(--main-dp-scale,1))!important;height:calc(26px * var(--main-dp-scale,1))!important}
+.drawerFoot{font-size:calc(10px * var(--main-dp-scale,1))!important;line-height:1.2!important;color:rgba(0,0,0,.40)!important;text-shadow:none!important}
+
+/* SettingsDialog.kt */
+.settingsDialog{
+  width:min(calc(100vw - 48px),320px)!important;
+  max-height:calc(100dvh - 32px)!important;
+  overflow:auto!important;
+  border-radius:28px!important;
+  padding:24px!important;
+  background:rgba(255,255,255,.40)!important;
+  color:#000!important;
+  text-shadow:var(--native-text-shadow)!important;
+  box-shadow:0 11px 15px -7px rgba(0,0,0,.20),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12)!important;
+  backdrop-filter:none!important;
+}
+.settingsHead{margin:0 0 16px!important;min-height:48px!important}
+.settingsHead h2{font-size:24px!important;line-height:1.2!important;font-weight:700!important}
+.infoBtn{width:48px!important;height:48px!important;padding:12px!important;border-radius:50%!important;background:transparent!important;color:rgba(0,0,0,.50)!important;font-size:0!important}
+.infoBtn .mi{width:24px!important;height:24px!important;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.20))!important}
+.settingsRow,.settingsBg{
+  margin:0 0 8px!important;
+  border-radius:12px!important;
+  background:rgba(0,0,0,.05)!important;
+  color:#000!important;
+  box-shadow:none!important;
+}
+.settingsRow{
+  min-height:48px!important;
+  padding:8px 16px!important;
+  gap:12px!important;
+  font-size:16px!important;
+  font-weight:500!important;
+}
+.setIcon{width:24px!important;height:24px!important;font-size:0!important;display:grid!important;place-items:center!important;flex:0 0 24px!important}
+.setIcon .mi,.settingsBgTitle .mi{width:24px!important;height:24px!important;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.20))!important}
+.switch{
+  width:41.6px!important;
+  height:25.6px!important;
+  padding:2.4px!important;
+  border-radius:16px!important;
+  background:#e6e0e9!important;
+  box-shadow:inset 0 0 0 1px #79747e!important;
+}
+.switch i{width:20.8px!important;height:20.8px!important;background:#79747e!important}
+.switch.on{background:rgba(255,213,79,.50)!important;box-shadow:none!important}
+.switch.on i{background:#ffd54f!important;transform:translateX(16px)!important}
+.settingsBg{padding:12px!important;display:block!important}
+.settingsBgTitle{gap:12px!important;font-size:16px!important;font-weight:500!important}
+.settingsBgActions{gap:8px!important;margin-top:12px!important}
+.settingsBgActions .chooseBg{
+  height:36px!important;
+  border-radius:10px!important;
+  padding:0 4px!important;
+  font-size:11px!important;
+  font-weight:700!important;
+  background:rgba(255,213,79,.80)!important;
+  color:#000!important;
+  text-shadow:var(--native-text-shadow)!important;
+  box-shadow:none!important;
+}
+.settingsBgActions .chooseBg.reset{background:rgba(255,0,0,.10)!important;color:rgba(255,0,0,.70)!important}
+.doneBtn{
+  width:100%!important;
+  height:40px!important;
+  margin:16px 0 0!important;
+  border-radius:20px!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  box-shadow:0 2px 4px rgba(0,0,0,.28)!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
+}
+.doneBtn .mi{width:18px!important;height:18px!important;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.30))!important}
+
+/* Material AlertDialogs */
+.confirmDialog,.infoDialog{
+  width:min(calc(100vw - 48px),320px)!important;
+  max-height:calc(100dvh - 32px)!important;
+  overflow:auto!important;
+  background:#fff!important;
+  color:#000!important;
+  border-radius:28px!important;
+  padding:24px!important;
+  text-shadow:var(--native-text-shadow)!important;
+  box-shadow:0 11px 15px -7px rgba(0,0,0,.20),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12)!important;
+}
+.confirmDialog h2,.infoDialog h2{font-size:24px!important;line-height:1.2!important;margin:0 0 16px!important;font-weight:700!important}
+.confirmDialog p{font-size:14px!important;line-height:1.42!important;margin:0 0 24px!important}
+.confirmActions{gap:8px!important;margin-top:0!important;justify-content:flex-end!important}
+.confirmActions .pillButton{
+  flex:0 1 auto!important;
+  min-width:96px!important;
+  height:40px!important;
+  border-radius:20px!important;
+  padding:0 16px!important;
+  font-size:14px!important;
+  box-shadow:0 2px 4px rgba(0,0,0,.28)!important;
+}
+.confirmActions .pillButton.gray{background:#d3d3d3!important;color:#000!important}
+.confirmActions .pillButton.danger{background:#f44336!important;color:#fff!important}
+.confirmActions .pillButton.pureRed{background:#ff0000!important}
+
+/* Native Turnier-Speichern/Verwerfen-Dialog */
+.tournamentExitDialog{width:min(calc(100vw - 48px),320px)!important;border-radius:24px!important;padding:24px!important}
+.tournamentExitDialog h2{font-size:24px!important;line-height:1.2!important;margin:0 0 16px!important}
+.tournamentExitDialog p{font-size:14px!important;line-height:1.42!important;margin:0 0 24px!important}
+.tournamentExitDialog .pillButton{height:40px!important;border-radius:20px!important;font-size:14px!important}
+
+/* Vollständiger nativer Info-Dialog */
+.infoDialog{display:flex!important;flex-direction:column!important}
+.infoSections{display:flex;flex-direction:column;gap:0}
+.infoSection{border-bottom:1px solid rgba(0,0,0,.10)}
+.infoSection:last-child{border-bottom:0}
+.infoSectionButton{width:100%;min-height:48px;padding:12px 0;border:0;background:transparent;color:#000;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px;font-weight:700;text-align:left;text-shadow:var(--native-text-shadow)}
+.infoSectionButton .mi{width:24px;height:24px;color:rgba(0,0,0,.50);transition:transform .18s ease;filter:none}
+.infoSection.open .infoSectionButton .mi{transform:rotate(180deg)}
+.infoSectionBody{display:none;padding:0 0 12px;font-size:14px;line-height:1.42;color:rgba(0,0,0,.70);white-space:pre-line;text-shadow:var(--native-text-shadow)}
+.infoSection.open .infoSectionBody{display:block}
+.infoVersion{text-align:center;color:#808080;font-size:12px;margin:16px 0 0}
+.infoDialog .infoClose{width:100%;height:40px;margin-top:16px;border:0;border-radius:20px;background:#4caf50;color:#fff;font-size:14px;font-weight:700;text-shadow:var(--native-text-shadow);box-shadow:0 2px 4px rgba(0,0,0,.28)}
+
+/* Spieler-Dialog: Color.Red ist im Original reines #FF0000. */
+.playerDialog .pillButton.red{background:#ff0000!important}
+
+/* WinnerCard.kt */
+.winnerCard{text-shadow:var(--native-text-shadow)!important}
+.winnerTrophy{width:calc(80px * var(--main-dp-scale,1))!important;height:calc(80px * var(--main-dp-scale,1))!important}
+.winnerAction{min-height:calc(40px * var(--main-dp-scale,1))!important;box-shadow:0 2px 4px rgba(0,0,0,.28)!important}
+
+/* Native Bildquellen-Auswahl: AlertDialog mit TextButtons statt Kacheln. */
+.mediaSourceDialog{
+  width:min(calc(100vw - 48px),320px)!important;
+  border-radius:28px!important;
+  padding:24px!important;
+  text-align:left!important;
+  background:var(--tour-card,#fff)!important;
+  color:var(--tour-fg,#000)!important;
+  box-shadow:0 11px 15px -7px rgba(0,0,0,.20),0 24px 38px 3px rgba(0,0,0,.14),0 9px 46px 8px rgba(0,0,0,.12)!important;
+}
+.mediaSourceIcon{display:none!important}
+.mediaSourceDialog h2{font-size:24px!important;line-height:1.2!important;margin:0 0 16px!important}
+.mediaSourceText{font-size:14px;line-height:1.42;margin:0 0 24px;color:inherit}
+.mediaSourceActions{display:flex!important;flex-direction:row!important;justify-content:flex-end!important;gap:8px!important}
+.mediaSourceActions button{
+  flex:0 1 auto!important;
+  min-width:0!important;
+  min-height:40px!important;
+  height:40px!important;
+  border:0!important;
+  border-radius:20px!important;
+  background:transparent!important;
+  color:inherit!important;
+  display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:8px!important;
+  padding:0 12px!important;
+  font-size:14px!important;font-weight:700!important;box-shadow:none!important;
+}
+.mediaSourceActions .mi{width:18px!important;height:18px!important}
+.mediaCancel{display:none!important}
+
+/* Keine künstliche 430px-Grenze auf echten Touch-Geräten. */
+@media (hover:none),(pointer:coarse){.pageScreen{left:0!important;right:0!important;width:100%!important;max-width:none!important;transform:none!important}}
+
+
+/* V65 visual audit: physical Compose shadows and shared Material geometry. */
+:root{
+  --shadow:2px 2px 3px rgba(0,0,0,.50)!important;
+  --main-shadow:2px 2px 3px rgba(0,0,0,.50)!important;
+  --g-shadow:2px 2px 3px rgba(0,0,0,.50)!important;
+  --native-text-shadow:2px 2px 3px rgba(0,0,0,.50)!important;
+}
+.mainLayer{transition:filter 300ms ease!important}
+.scrim{transition:opacity 300ms ease!important}
+.dialogLayer{background:rgba(0,0,0,.30)!important}
+.tournamentPage,.tournamentHistory,.nativeTournamentEditor,.tournamentEditor,.mediaPage,.backgroundEditor{ text-shadow:var(--native-text-shadow)!important }
+.tournamentPage .tournamentTop .pageTitle,
+.tournamentHistory .historyTop .pageTitle{ text-shadow:var(--native-text-shadow)!important }
+.tournamentPage .tournamentCard,
+.tournamentPage .tourSmall span{box-shadow:2px 2px 3px rgba(0,0,0,.50)!important}
+.gamesHeaderSurface{box-shadow:0 2px 4px rgba(0,0,0,.20)!important}
+.nativeGameCard{
+  box-shadow:0 2px 4px -1px rgba(0,0,0,.20),0 4px 5px 0 rgba(0,0,0,.14),0 1px 10px 0 rgba(0,0,0,.12)!important;
+}
+.drawerPanel .drawerIcon .mi{filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.30))!important}
+.confirmActions .pillButton,.doneBtn,.playerDialog .pillButton,.winnerAction{
+  box-shadow:0 2px 4px rgba(0,0,0,.28)!important;
+}
+.winnerCard{
+  box-shadow:0 7px 8px -4px rgba(0,0,0,.20),0 12px 17px 2px rgba(0,0,0,.14),0 5px 22px 4px rgba(0,0,0,.12)!important;
+}
+
+/* Native ImageCropScreen: 3:4 frame, 2dp outline and bottom icon row. */
+.mediaCropBody{justify-content:flex-start!important;padding:0 16px max(16px,env(safe-area-inset-bottom))!important}
+.mediaCropFrame{
+  flex:1 1 auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  max-height:none!important;
+  margin:0!important;
+  aspect-ratio:3/4!important;
+  border:2px solid color-mix(in srgb,var(--tour-fg,#000) 50%,transparent)!important;
+  border-radius:4px!important;
+  background:#303030!important;
+  box-shadow:none!important;
+}
+.mediaCropControls{flex:0 0 auto;width:100%;display:flex;justify-content:space-evenly;align-items:center;padding:16px 0 8px}
+.mediaCropControls button{width:48px;height:48px;border:0;border-radius:50%;padding:12px;background:transparent;color:var(--tour-fg,#000);display:grid;place-items:center}
+.mediaCropControls button:active{background:rgba(128,128,128,.15)}
+.mediaCropControls .mi{width:24px;height:24px;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.20))}
+.mediaCropHelp{margin:0!important;padding:0 0 16px!important;color:color-mix(in srgb,var(--tour-fg,#000) 50%,transparent)!important;text-shadow:var(--native-text-shadow)!important}
+
+.mediaCropFrame{
+  flex:0 1 auto!important;
+  width:min(100%,calc((100dvh - var(--tn-header-height,80px) - 132px) * .75))!important;
+  max-height:calc(100dvh - var(--tn-header-height,80px) - 132px)!important;
+  align-self:center!important;
+}
+
+/* Native DrawingScreen bottom controls. */
+.mediaColorRow{width:100%!important;gap:16px!important;padding:24px!important}
+.mediaColorDot{width:32px!important;height:32px!important;flex-basis:32px!important;border:2px solid color-mix(in srgb,var(--tour-fg,#000) 50%,transparent)!important}
+.mediaHueBar{height:16px!important;border-radius:8px!important}
+.mediaHueBar i{width:24px!important;height:24px!important;border-width:3px!important}
+.mediaDrawTools{width:100%!important;padding:0 16px 32px!important;justify-content:space-around!important}
+.mediaDrawTools button{width:48px!important;height:48px!important;padding:12px!important;border-radius:50%!important;display:grid!important;place-items:center!important;background:transparent!important;color:inherit!important}
+.mediaDrawTools button:active{background:rgba(128,128,128,.15)!important}
+.mediaDrawTools .mi{width:24px!important;height:24px!important;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.20))!important}
+
+/* Main icon shadows mirror the duplicated Compose icon layers. */
+.mainLayer .systemDrop .mi{filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.30))!important}
+.mainLayer .roundRefresh{color:rgba(255,255,255,.30)!important;text-shadow:none!important}
+.mainLayer .roundRefresh .mi{filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.30))!important}
+.mainLayer .plusIcon .mi{filter:drop-shadow(1px 1px 0 rgba(0,0,0,.30))!important}
+.nativeTournamentEditor .editorTop .pageTitle,
+.nativeTournamentEditor .fieldLabel input,
+.nativeTournamentEditor .fieldLabel select,
+.nativeTournamentEditor .tourInputs input,
+.nativeTournamentEditor .tourNotesInput{ text-shadow:var(--native-text-shadow)!important }
+
+.mediaSourceDialog.gallerySourceDialog .mediaSourceIcon{display:grid!important;place-items:center;width:48px;height:48px;margin:0 auto 8px;color:var(--tour-fg,#000)}
+.mediaSourceDialog.gallerySourceDialog .mediaSourceIcon .mi{width:24px;height:24px}
+.mediaSourceDialog.gallerySourceDialog h2{text-align:center!important}
+.mediaSourceDialog.gallerySourceDialog .mediaSourceActions button{padding:0 12px!important}
+
+/* Native tournament gallery and full-screen image preview. */
+.mediaGalleryItem{box-shadow:none!important}
+.mediaGalleryAdd{box-shadow:none!important;font-size:10px!important;gap:4px!important}
+.mediaGalleryAdd .mi{width:32px!important;height:32px!important}
+.mediaCardActions button{
+  width:28px!important;height:28px!important;padding:6px!important;
+  background:color-mix(in srgb,var(--tour-card,#fff) 70%,transparent)!important;
+  color:var(--tour-fg,#000)!important;
+  box-shadow:none!important;
+}
+.mediaDrawFrame{box-shadow:none!important}
+.mediaPreviewOverlay{
+  background:color-mix(in srgb,var(--tour-bg,#fff) 30%,transparent)!important;
+  backdrop-filter:blur(15px)!important;
+  -webkit-backdrop-filter:blur(15px)!important;
+  display:block!important;
+}
+.mediaPreviewOverlay>button{
+  top:max(16px,env(safe-area-inset-top))!important;right:16px!important;
+  width:48px!important;height:48px!important;padding:12px!important;
+  background:color-mix(in srgb,var(--tour-card,#fff) 70%,transparent)!important;
+  color:var(--tour-fg,#000)!important;box-shadow:none!important;
+}
+.mediaPreviewOverlay>img{
+  width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;
+  padding:16px!important;box-sizing:border-box!important;object-fit:contain!important;
+}
+
+/* V65 final fixed-dp corrections: Compose defaults stay fixed while adaptiveDp values scale. */
+.gamesHeaderRow{min-height:calc(48px + (32px * var(--games-scale,1)))!important}
+.gamesIconButton{
+  flex-basis:48px!important;width:48px!important;height:48px!important;
+}
+.gamesIconButton .mi{
+  width:24px!important;height:24px!important;
+  filter:drop-shadow(1px 1px 0 rgba(0,0,0,.20))!important;
+}
+.gamesSearchField{
+  height:56px!important;
+  border-width:1px!important;
+  border-radius:calc(12px * var(--games-scale,1))!important;
+}
+.gamesSearchField:focus-within{border-width:2px!important}
+.gamesSearchField input{font-size:16px!important}
+.gamesSearchField .gamesIconButton{flex-basis:48px!important;width:48px!important;height:100%!important}
+.gamesSuggestionChip{
+  min-height:0!important;
+  padding:calc(6px * var(--games-scale,1)) calc(12px * var(--games-scale,1))!important;
+  border-width:1px!important;
+  border-radius:calc(16px * var(--games-scale,1))!important;
+  font-size:calc(12px * var(--games-scale,1))!important;
+  font-weight:500!important;
+}
+
+/* MainActivity winner badge uses fixed Material dp, not adaptiveDp. */
+.winnerBadge{
+  width:50px!important;height:70px!important;
+  border-radius:28px 0 0 28px!important;
+  box-shadow:0 4px 8px rgba(0,0,0,.30)!important;
+}
+.winnerBadge .mi{width:32px!important;height:32px!important}
+.winnerBadgeShadow{transform:translate(1.5px,1.5px)!important}
+.winnerBadge.transitioning{
+  height:min(450px,calc(100% - 40px))!important;
+  border-radius:28px!important;
+}
+.winnerShare{right:8px!important;top:8px!important;width:48px!important;height:48px!important;padding:12px!important}
+.winnerShare .mi{width:24px!important;height:24px!important}
+.winnerAction{
+  min-height:40px!important;height:40px!important;
+  border-radius:20px!important;
+}
+.winnerAction .mi{width:24px!important;height:24px!important}
+
+/* AlertDialog buttons and icon shadows are physical Compose dp/px. */
+.playerDialog .pillButton,.confirmActions .pillButton,.doneBtn,.winnerAction{border-radius:20px!important}
+.playerDialog .pillButton .mi,.doneBtn .mi,.winnerAction .mi{filter:drop-shadow(1px 1px 0 rgba(0,0,0,.30))!important}
+
+/* Background editor: fixed Material controls plus adaptive mode circles from the native screen. */
+.bgEditTopBtn{width:48px!important;height:48px!important;padding:12px!important}
+.bgEditTopBtn .mi{width:24px!important;height:24px!important}
+.bgEditMode{width:calc(48px * var(--main-dp-scale,1))!important;height:calc(48px * var(--main-dp-scale,1))!important;padding:calc(12px * var(--main-dp-scale,1))!important}
+.bgEditMode .mi{width:calc(24px * var(--main-dp-scale,1))!important;height:calc(24px * var(--main-dp-scale,1))!important}
+.bgEditPreset{border-radius:12px!important;padding:8px 16px!important;font-size:calc(14px * var(--main-dp-scale,1))!important}
+
+/* Native TournamentHistoryScreen search header and empty state. */
+.tourHistoryHeaderSurface{flex:0 0 auto;width:100%;background:var(--tour-bg,#fff);box-shadow:none;z-index:5}
+.tournamentHistory .tourSearchTop{justify-content:flex-start!important}
+.tourSearchField{
+  flex:1;min-width:0;height:56px;border:1px solid var(--tour-muted,#777);
+  border-radius:var(--tour-a12,12px);display:flex;align-items:center;background:transparent;
+  overflow:hidden;color:var(--tour-fg,#000);
+}
+.tourSearchField:focus-within{border:2px solid var(--tour-fg,#000)}
+.tourSearchField input{
+  flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:var(--tour-fg,#000);
+  padding:0 var(--tour-a14,14px);font:inherit;font-size:16px;text-shadow:var(--native-text-shadow);
+}
+.tourSearchField input::placeholder{color:color-mix(in srgb,var(--tour-fg,#000) 60%,transparent)}
+.tourSearchField .pageIcon{flex:0 0 48px!important;width:48px!important;height:100%!important}
+.tourSearchSuggestions{display:flex;gap:var(--tour-a8,8px);overflow-x:auto;padding:0 var(--tour-a16,16px) var(--tour-a12,12px);scrollbar-width:none}
+.tourSearchSuggestions::-webkit-scrollbar{display:none}
+.tourSearchChip{
+  flex:0 0 auto;border:1px solid color-mix(in srgb,var(--tour-fg,#000) 20%,transparent);
+  border-radius:var(--tour-a16,16px);background:var(--tour-card2,#f5f5f5);color:var(--tour-fg,#000);
+  padding:var(--tour-a6,6px) var(--tour-a12,12px);font-size:var(--tour-a12,12px);font-weight:500;
+  text-shadow:none;white-space:nowrap;
+}
+.tourHistoryEmpty{flex:1;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:color-mix(in srgb,var(--tour-fg,#000) 50%,transparent);text-align:center;font-size:14px}
+.tourHistoryEmptyIcon{position:relative;width:var(--tour-a64,64px);height:var(--tour-a64,64px);margin-bottom:var(--tour-a16,16px);color:color-mix(in srgb,var(--tour-fg,#000) 30%,transparent)}
+.tourHistoryEmptyIcon .mi{width:100%;height:100%;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.10))}
+.tournamentPage .tournamentTop .pageIcon .mi,
+.tournamentPage .tournamentTop .powerBtn .mi,
+.nativeTournamentEditor .editorTop .pageIcon .mi,
+.nativeTournamentEditor .editorTop .saveIcon .mi{filter:drop-shadow(1px 1px 0 rgba(0,0,0,.20))!important}
+.tournamentHistory .historyTop .pageIcon .mi{filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.50))!important}
+.mainLayer>.topbar .pin{opacity:1!important;color:rgba(255,255,255,.50)!important}
+.mainLayer>.topbar .pin .mi{filter:drop-shadow(1px 1px 0 rgba(0,0,0,.20))!important}
+.gamesEmptyIcon .shadowIcon{transform:translate(2px,2px)!important}
+
+/* Exact Material color roles from Components.kt. */
+.tourThemeLight{
+  --tour-bg:#ffffff;--tour-surface:#ffffff;--tour-fg:#000000;
+  --tour-card:#f5f5f5;--tour-card2:#f5f5f5;
+  --tour-muted:rgba(0,0,0,.70);--tour-muted2:rgba(0,0,0,.50);
+  --tour-input:rgba(0,0,0,.05);--tour-border:#79747e;--tour-divider:rgba(121,116,126,.30);
+}
+.tourThemeDark{
+  --tour-bg:#121212;--tour-surface:#1c1c1c;--tour-fg:#ffffff;
+  --tour-card:#2c2c2c;--tour-card2:#2c2c2c;
+  --tour-muted:rgba(255,255,255,.70);--tour-muted2:rgba(255,255,255,.50);
+  --tour-input:rgba(255,255,255,.05);--tour-border:#938f99;--tour-divider:rgba(202,196,208,.30);
+}
+.tournamentPage .tourIcon.green{background:rgba(76,175,80,.15)!important;color:#4caf50!important}
+.tournamentPage .tourIcon.blue{background:rgba(33,150,243,.15)!important;color:#2196f3!important}
+.tournamentPage .tourIcon .mi,
+.tournamentPage .tourSmall span .mi{filter:drop-shadow(1.5px 1.5px 0 rgba(0,0,0,.30))!important}
+.tournamentPage .tournamentCard small{color:color-mix(in srgb,var(--tour-fg,#000) 70%,transparent)!important}
+.tournamentPage .tourSmall b{color:color-mix(in srgb,var(--tour-fg,#000) 70%,transparent)!important}
+.mediaSourceDialog{background:var(--tour-surface,var(--tour-card,#fff))!important}
+/* BackgroundImageEditScreen.kt: adaptive top/bottom geometry and native gradient. */
+.bgEditTop{
+  min-height:calc(48px + 32px * var(--main-dp-scale,1))!important;
+  padding:max(calc(16px * var(--main-dp-scale,1)),env(safe-area-inset-top)) calc(16px * var(--main-dp-scale,1)) calc(16px * var(--main-dp-scale,1))!important;
+  gap:calc(8px * var(--main-dp-scale,1))!important;
+}
+.bgEditTop h2{font-size:calc(20px * var(--main-dp-scale,1))!important}
+.bgEditBottom{
+  padding:0 0 max(calc(32px * var(--main-dp-scale,1)),env(safe-area-inset-bottom))!important;
+  gap:0!important;background:linear-gradient(to bottom,transparent,rgba(0,0,0,.70))!important;
+}
+.bgEditControl{min-height:0!important;padding:calc(16px * var(--main-dp-scale,1)) calc(32px * var(--main-dp-scale,1))!important}
+.bgEditModes{padding:0 calc(16px * var(--main-dp-scale,1))!important}
+.bgEditPresets{padding:0 16px!important;gap:12px!important}
+
+/* Remaining source-level visual parity fixes. */
+.infoDialog{background:rgba(255,255,255,.40)!important}
+.mainLayer.badgeBlurTransition{transition-duration:450ms!important}
+.scrim.badgeBlurTransition{transition-duration:450ms!important}
+
+
+/* V69: Gewinner-Badge exakt nach MainActivity.kt.
+   Native Compose zeigt das Badge ohne separate Einfluganimation und morphiert es
+   in 450 ms mit FastOutSlowInEasing von 50x70 dp auf 90% x 450 dp. */
+.winnerBadge{
+  position:absolute!important;
+  right:0!important;
+  top:50%!important;
+  width:50px!important;
+  height:70px!important;
+  transform:translateY(-50%)!important;
+  border:0!important;
+  border-radius:28px 0 0 28px!important;
+  background:#ffd700!important;
+  color:#fff!important;
+  box-shadow:0 4px 8px rgba(0,0,0,.30)!important;
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  animation:none!important;
+  transition:
+    right 450ms cubic-bezier(.4,0,.2,1),
+    width 450ms cubic-bezier(.4,0,.2,1),
+    height 450ms cubic-bezier(.4,0,.2,1),
+    border-radius 450ms cubic-bezier(.4,0,.2,1),
+    background-color 450ms cubic-bezier(.4,0,.2,1),
+    box-shadow 450ms cubic-bezier(.4,0,.2,1)!important;
+  will-change:right,width,height,border-radius,background-color,box-shadow;
+}
+.winnerBadge .winnerBadgeShadow,
+.winnerBadge .winnerBadgeIcon{
+  position:absolute!important;
+  display:grid!important;
+  place-items:center!important;
+  width:32px!important;
+  height:32px!important;
+  opacity:1;
+  transition:opacity 450ms cubic-bezier(.4,0,.2,1)!important;
+  will-change:opacity;
+}
+.winnerBadge .winnerBadgeShadow{color:rgba(0,0,0,.20)!important;transform:translate(1.5px,1.5px)!important}
+.winnerBadge .winnerBadgeIcon{color:#fff!important;transform:none!important}
+.winnerBadge.transitioning{
+  right:5%!important;
+  width:90%!important;
+  height:450px!important;
+  border-radius:28px!important;
+  background-color:#fff!important;
+  box-shadow:0 0 0 rgba(0,0,0,0)!important;
+  animation:none!important;
+}
+.winnerBadge.transitioning .winnerBadgeShadow{opacity:0!important}
+.winnerBadge.transitioning .winnerBadgeIcon{color:#ffd700!important;opacity:0!important}
+.winnerBadge:active{transform:translateY(-50%)!important;filter:none!important}
+
+
+</style>
+
+<style id="v69-player-glass-fix">
+/* V69: Spieler-Dialog wieder wie die native Android-12+-Variante.
+   Der globale #scrim liefert bereits 30 % Abdunklung und .mainLayer.blurred
+   die native 12-dp-Unschärfe. Die Dialog-Ebene selbst darf deshalb keinen
+   zweiten schwarzen Scrim zeichnen, sonst wirkt die 40-%-weiße Fläche deckend. */
+.playerDialogLayer{
+  background:transparent!important;
+}
+.playerDialogLayer .playerDialog{
+  background:rgba(255,255,255,.40)!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+/* Native App: vor Android 12 kein Hintergrund-Blur und ein weißer Dialog. */
+.playerDialogLayer.legacyPlayerDialogLayer .playerDialog{
+  background:#fff!important;
+}
+</style>
+
+
+<style id="v71-player-dialog-release-fix">
+/* V71 release fix: V67's exact PlayerDialogs.kt / Material3 geometry was
+   accidentally dropped in V68-V70. This final block restores that geometry
+   while preserving V69's Android-12+ glass surface and V70's score-cycle fix. */
+.playerDialogLayer{
+  background:transparent!important;
+  padding:0!important;
+}
+.playerDialog{
+  width:min(320px,calc(100vw - 48px))!important;
+  min-width:0!important;
+  max-width:320px!important;
+  padding:24px!important;
+  overflow:visible!important;
+  border-radius:24px!important;
+  background:rgba(255,255,255,.40)!important;
+  color:#000!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+.playerDialogLayer.legacyPlayerDialogLayer .playerDialog{
+  background:#fff!important;
+}
+.playerDialog h2{
+  margin:0 0 16px!important;
+  padding:0!important;
+  color:#000!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  line-height:normal!important;
+}
+.playerDialogBody{
+  padding:0 0 24px!important;
+}
+.playerDialog .nameInput{
+  display:block!important;
+  width:100%!important;
+  height:56px!important;
+  margin:0 0 16px!important;
+  padding:0 16px!important;
+  border:0!important;
+  border-radius:12px!important;
+  outline:0!important;
+  background:var(--dialog-color,#2836a3)!important;
+  color:#fff!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  line-height:normal!important;
+  caret-color:#fff!important;
+  text-shadow:var(--native-text-shadow,.72px .72px 1.08px rgba(0,0,0,.50))!important;
+}
+.playerDialog .nameInput::placeholder{
+  color:rgba(255,255,255,.70)!important;
+  font-size:16px!important;
+  font-weight:400!important;
+  line-height:normal!important;
+}
+.playerDialog .hueBar{
+  position:relative!important;
+  width:100%!important;
+  height:45px!important;
+  margin:0!important;
+  overflow:hidden!important;
+  border-radius:8px!important;
+  background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)!important;
+  touch-action:none!important;
+}
+.playerDialog .hueKnob{
+  position:absolute!important;
+  top:50%!important;
+  width:27px!important;
+  height:27px!important;
+  margin:-13.5px 0 0 -13.5px!important;
+  border:3px solid #fff!important;
+  border-radius:50%!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  pointer-events:none!important;
+}
+.playerDialog .dialogActions{
+  display:flex!important;
+  width:100%!important;
+  gap:8px!important;
+  margin:0!important;
+  padding:0!important;
+}
+.playerDialog .pillButton{
+  flex:1 1 0!important;
+  min-width:0!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:0 8px!important;
+  border:0!important;
+  border-radius:20px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:4px!important;
+  color:#fff!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  line-height:normal!important;
+  transform:none!important;
+  box-shadow:0 2px 4px -1px rgba(0,0,0,.20),0 4px 5px 0 rgba(0,0,0,.14),0 1px 10px 0 rgba(0,0,0,.12)!important;
+}
+.playerDialog.addPlayerDialog .pillButton{
+  gap:8px!important;
+}
+.playerDialog .pillButton:active{
+  transform:none!important;
+  box-shadow:0 5px 5px -3px rgba(0,0,0,.20),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12)!important;
+}
+.playerDialog .pillButton .mi{
+  width:18px!important;
+  height:18px!important;
+  flex:0 0 18px!important;
+  fill:currentColor!important;
+  filter:drop-shadow(1px 1px 0 rgba(0,0,0,.30))!important;
+}
+@media (max-width:319px){
+  .playerDialog{width:calc(100vw - 32px)!important;max-width:none!important;}
+}
+</style>
+
+<style id="v75-player-dialog-photo-match">
+/* V75: real-device comparison with the native Compose dialog.
+   AlertDialog resolves to roughly 320 dp on this handset, not the previous
+   hard-coded 280 px. Modern Chromium also freezes the Android UA at 10, so
+   legacy white mode must never be selected from the reduced UA string. */
+.playerDialog{
+  width:min(320px,calc(100vw - 48px))!important;
+  max-width:320px!important;
+}
+@media (max-width:359px){
+  .playerDialog{width:calc(100vw - 32px)!important;max-width:320px!important;}
+}
+</style>
+
+
+<style id="v76-media-delete-top-layer">
+/* V76: the image-delete confirmation is a real top-level portal. It must
+   always cover Galerie - Bahn X, the zoom preview and drag overlays. */
+.mediaDeleteConfirmLayer{
+  position:fixed!important;
+  inset:0!important;
+  left:0!important;
+  top:0!important;
+  right:0!important;
+  bottom:0!important;
+  width:100vw!important;
+  height:100vh!important;
+  height:100dvh!important;
+  max-width:none!important;
+  max-height:none!important;
+  transform:none!important;
+  border-radius:0!important;
+  overflow:visible!important;
+  z-index:2147483000!important;
+  display:flex!important;
+  isolation:isolate!important;
+  background:rgba(0,0,0,.30)!important;
+}
+.mediaDeleteConfirmLayer .mediaDeleteConfirmDialog{
+  position:relative!important;
+  z-index:1!important;
+}
+</style>
+
+<style id="v79-native-drawer-edge-swipe">
+/* Native MainActivity.kt: unsichtbare 30-dp-Zone am linken Rand.
+   Sie liegt nur über der Hauptansicht; Dialoge/Unterseiten besitzen höhere Ebenen. */
+.drawerEdgeSwipeZone{
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:30px;
+  z-index:19;
+  background:transparent;
+  touch-action:pan-y;
+  pointer-events:auto;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+</style>
+
+
+<style id="v80-native-list-card-shadows">
+/* V80: Compose Surface shadowElevation=4dp must remain visible outside the
+   swipe container. The old overflow:hidden clipped all three card shadows.
+   Swipe backgrounds already have their own rounded clipping. */
+.gamesSwipeWrap,
+.tournamentHistory .tourSwipeRow{
+  overflow:visible!important;
+}
+.gamesSwipeBg,
+.tournamentHistory .tourSwipeBg{
+  overflow:hidden!important;
+}
+/* Saved notes use the same Material 4dp elevation as Active/History cards. */
+.tournamentHistory .tourNoteCard{
+  box-shadow:
+    0 calc(2px * var(--tour-scale,1)) calc(4px * var(--tour-scale,1)) calc(-1px * var(--tour-scale,1)) rgba(0,0,0,.20),
+    0 calc(4px * var(--tour-scale,1)) calc(5px * var(--tour-scale,1)) 0 rgba(0,0,0,.14),
+    0 calc(1px * var(--tour-scale,1)) calc(10px * var(--tour-scale,1)) 0 rgba(0,0,0,.12)!important;
+}
+
+
+/* v81: Runden-Popup und Swipe direkt nach ScoreTable.kt.
+   Material3 DropdownMenu: 112dp Mindestbreite, 8dp Vertikalpadding,
+   48.adaptiveDp Zeilen, 14sp Label, 24dp Icons und native Popup-Animation. */
+#roundHeader{cursor:pointer!important;touch-action:manipulation!important}
+.roundMenu{
+  width:max-content!important;
+  min-width:112px!important;
+  padding:8px 0!important;
+  background:#fff!important;
+  opacity:0;
+  transform:scale(.80);
+  transform-origin:0 0;
+  transition:transform 120ms cubic-bezier(.2,0,0,1),opacity 30ms linear;
+  will-change:transform,opacity;
+}
+.roundMenu.roundMenuOpen{opacity:1;transform:scale(1)}
+.roundMenu.roundMenuClosing{
+  opacity:0;
+  transform:scale(.80);
+  transition:transform 75ms cubic-bezier(.4,0,1,1),opacity 75ms linear;
+}
+.roundMenuSizer{
+  display:flex;
+  align-items:center;
+  gap:calc(8px * var(--native-menu-scale,1));
+  width:max-content;
+  height:0;
+  min-height:0;
+  overflow:hidden;
+  visibility:hidden;
+  pointer-events:none;
+  white-space:nowrap;
+  padding:0 12px;
+  font-size:14px;
+  font-weight:400;
+  line-height:1.2;
+}
+.roundMenuSizer .bigPlus,
+.roundAddItem .bigPlus{
+  width:24px!important;
+  height:24px!important;
+  min-width:24px!important;
+  flex:0 0 24px!important;
+  display:grid!important;
+  place-items:center!important;
+  font-size:0!important;
+  line-height:0!important;
+}
+.roundMenuSizer .bigPlus .mi,
+.roundAddItem .bigPlus .mi{width:24px!important;height:24px!important;fill:currentColor!important}
+.roundItem,
+.roundAddItem{
+  height:calc(48px * var(--native-menu-scale,1))!important;
+  min-height:calc(48px * var(--native-menu-scale,1))!important;
+}
+.roundItemForeground{
+  gap:calc(8px * var(--native-menu-scale,1))!important;
+  padding:0 12px!important;
+  white-space:nowrap!important;
+  font-size:14px!important;
+  font-weight:400!important;
+  line-height:1.2!important;
+  transform:translateX(0);
+}
+.roundSwipeBackground{padding:0 calc(16px * var(--native-menu-scale,1))!important}
+.roundDeleteIcon,.roundDeleteIcon .mi{width:24px!important;height:24px!important}
+</style>
+
+<style id="v84-opaque-main-dropdowns">
+/* V84: Compose DropdownMenu has an opaque Material surface underneath the
+   semi-transparent modifier. The PWA mirrors the visible result: no game
+   background may shine through the system or round popup. */
+.systemMenu,
+.roundMenu {
+  background-color:#fff!important;
+  background-image:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+</style>
+
+<style id="v84-local-tournament-actions-test">
+/* Lokaler UI-Test: Kartenaktionen und Import-FABs. Sichtbare App-Version bleibt V84. */
+.tournamentHistory .tourNoteMain{padding-right:42px!important;box-sizing:border-box!important}
+.tournamentHistory .tourNoteMenuButton{
+  position:absolute!important;top:50%!important;right:8px!important;transform:translateY(-50%)!important;
+  z-index:5!important;width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;
+  border:0!important;border-radius:50%!important;background:transparent!important;color:var(--tour-fg,#000)!important;
+  display:grid!important;place-items:center!important;cursor:pointer!important;touch-action:manipulation!important;
+}
+.tournamentHistory .tourNoteMenuButton:active{background:color-mix(in srgb,var(--tour-fg,#000) 12%,transparent)!important}
+.tournamentHistory .tourNoteMenuButton .mi{width:25px!important;height:25px!important;fill:currentColor!important}
+.tournamentHistory .tourCardMenuLayer{position:absolute!important;inset:0!important;z-index:40!important;background:transparent!important}
+.tournamentHistory .tourCardMenu{
+  position:absolute!important;min-width:235px!important;padding:6px!important;border-radius:14px!important;
+  background:var(--tour-card,#fff)!important;color:var(--tour-fg,#000)!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.28)!important;border:1px solid color-mix(in srgb,var(--tour-fg,#000) 10%,transparent)!important;
+}
+.tournamentHistory .tourCardMenu button{
+  width:100%!important;min-height:48px!important;padding:0 12px!important;border:0!important;border-radius:10px!important;
+  background:transparent!important;color:inherit!important;display:grid!important;grid-template-columns:28px 1fr auto!important;
+  align-items:center!important;gap:10px!important;text-align:left!important;font-size:15px!important;font-weight:650!important;
+}
+.tournamentHistory .tourCardMenu button:active{background:color-mix(in srgb,var(--tour-fg,#000) 10%,transparent)!important}
+.tournamentHistory .tourCardMenu .mi{width:24px!important;height:24px!important;fill:currentColor!important}
+.tournamentHistory .tourCardMenu small{font-size:11px!important;font-weight:700!important;opacity:.55!important}
+.tournamentHistory .tourHistoryList{padding-bottom:calc(148px + env(safe-area-inset-bottom,0px))!important}
+.tournamentHistory .tourImportFabs{
+  position:absolute!important;right:16px!important;bottom:calc(18px + env(safe-area-inset-bottom,0px))!important;
+  z-index:25!important;display:flex!important;flex-direction:column!important;gap:12px!important;align-items:center!important;
+}
+.tournamentHistory .tourImportFab{
+  width:56px!important;height:56px!important;min-width:56px!important;padding:0!important;border:0!important;border-radius:50%!important;
+  display:grid!important;place-items:center!important;color:#fff!important;box-shadow:0 7px 18px rgba(0,0,0,.28)!important;
+  cursor:pointer!important;touch-action:manipulation!important;
+}
+.tournamentHistory .tourImportFab.cloud{background:#2196f3!important}
+.tournamentHistory .tourImportFab.local{background:#4caf50!important}
+.tournamentHistory .tourImportFab:active{transform:scale(.94)!important}
+.tournamentHistory .tourImportFab .mi{width:29px!important;height:29px!important;fill:currentColor!important}
+.nativeTournamentEditor .viewHeaderSpacer{flex:0 0 var(--tn-fixed-icon-button,48px);width:var(--tn-fixed-icon-button,48px);height:1px}
+@media (hover:hover) and (pointer:fine){
+  .tournamentHistory .tourNoteMenuButton:hover,.tournamentHistory .tourCardMenu button:hover{background:color-mix(in srgb,var(--tour-fg,#000) 8%,transparent)!important}
+  .tournamentHistory .tourImportFab:hover{filter:brightness(1.05)}
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="app"><div id="mainLayer" class="mainLayer"></div></div>
+<div id="scrim" class="scrim"></div>
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<script src="script.js"></script>
+<script src="bitmap-share.js"></script>
+<script src="tournament-media.js"></script>
+<script src="mgpk-compat.js"></script>
+<script src="drive-config.js"></script>
+<script src="drive-form-client-v5.js"></script>
+<script src="cloud-share.js"></script>
+<script src="pwa-update.js"></script>
+</body>
+</html>

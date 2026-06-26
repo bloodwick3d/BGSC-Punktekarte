@@ -1,673 +1,523 @@
 package de.bgsc.minigolf
 
 import android.app.Activity
+import android.content.ClipData
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
+import android.util.Base64
+import android.util.Log
+import android.view.View
 import android.view.WindowManager
+import android.webkit.ConsoleMessage
+import android.webkit.CookieManager
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Button
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
-import androidx.compose.ui.unit.lerp
-import coil.compose.AsyncImage
-import androidx.core.graphics.drawable.toDrawable
+import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlin.math.roundToInt
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import androidx.webkit.JavaScriptReplyProxy
+import androidx.webkit.WebMessageCompat
+import androidx.webkit.WebViewAssetLoader
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
+import java.util.Locale
 
-class MainActivity : ComponentActivity() {
-    private lateinit var golfViewModel: GolfViewModel
+class MainActivity : androidx.activity.ComponentActivity() {
+
+    companion object {
+        private const val TAG = "MiniGolfWrapper"
+        private const val APP_ORIGIN = "https://appassets.androidplatform.net"
+        private const val START_URL = "$APP_ORIGIN/assets/pwa/index.html"
+        private const val MAX_NATIVE_TRANSFER_BYTES = 24 * 1024 * 1024
+    }
+
+    private lateinit var webView: WebView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var errorPanel: View
+    private lateinit var errorText: TextView
+    private lateinit var migrationCoordinator: LegacyMigrationCoordinator
+
+    private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private var cameraOutputUri: Uri? = null
+    private var pendingSave: PendingSave? = null
+
+    private data class NativePacket(
+        val requestId: String,
+        val action: String,
+        val fileName: String,
+        val mimeType: String,
+        val title: String,
+        val text: String,
+        val bytes: ByteArray?,
+        val json: JSONObject
+    )
+
+    private data class PendingSave(
+        val packet: NativePacket,
+        val replyProxy: JavaScriptReplyProxy
+    )
+
+    private val fileChooserLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val callback = fileChooserCallback ?: return@registerForActivityResult
+        fileChooserCallback = null
+
+        val uris = when {
+            result.resultCode != Activity.RESULT_OK -> null
+            result.data?.data != null || result.data?.clipData != null ->
+                WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+            cameraOutputUri != null -> arrayOf(cameraOutputUri!!)
+            else -> null
+        }
+        cameraOutputUri = null
+        callback.onReceiveValue(uris)
+    }
+
+    private val saveDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val pending = pendingSave ?: return@registerForActivityResult
+        pendingSave = null
+        val uri = result.data?.data
+        if (result.resultCode != Activity.RESULT_OK || uri == null) {
+            reply(pending.replyProxy, pending.packet.requestId, false, "Speichern abgebrochen.")
+            return@registerForActivityResult
+        }
+
+        lifecycleScope.launch {
+            val error = withContext(Dispatchers.IO) {
+                runCatching {
+                    contentResolver.openOutputStream(uri, "w")?.use { output ->
+                        output.write(pending.packet.bytes ?: ByteArray(0))
+                        output.flush()
+                    } ?: error("Datei konnte nicht geöffnet werden.")
+                }.exceptionOrNull()
+            }
+
+            if (error == null) {
+                Toast.makeText(this@MainActivity, "Datei gespeichert", Toast.LENGTH_SHORT).show()
+                reply(pending.replyProxy, pending.packet.requestId, true, "Datei gespeichert.")
+            } else {
+                reply(pending.replyProxy, pending.packet.requestId, false, error.message ?: "Speichern fehlgeschlagen.")
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        } else {
-            @Suppress("DEPRECATION")
-            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-        }
-        
-        window.setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
-        
-        updateLayoutInDisplayCutoutMode(true)
-
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            ),
-            navigationBarStyle = SystemBarStyle.auto(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            )
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.isNavigationBarContrastEnforced = false
-            @Suppress("DEPRECATION")
-            window.isStatusBarContrastEnforced = false
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        setContentView(R.layout.activity_main)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
         }
 
-        setContent { 
-            golfViewModel = viewModel()
-            val isDarkTheme = isSystemInDarkTheme()
-            
-            var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+        webView = findViewById(R.id.webView)
+        progressBar = findViewById(R.id.progressBar)
+        errorPanel = findViewById(R.id.errorPanel)
+        errorText = findViewById(R.id.errorText)
+        migrationCoordinator = LegacyMigrationCoordinator(this, webView, ::reply)
+        findViewById<Button>(R.id.reloadButton).setOnClickListener {
+            errorPanel.isVisible = false
+            webView.reload()
+        }
 
-            val shadowStyle = remember { 
-                TextStyle(
-                    fontFamily = CalibriFontFamily,
-                    shadow = Shadow(color = Color.Black.copy(alpha = 0.5f), offset = Offset(2f, 2f), blurRadius = 3f)
-                ) 
-            }
+        configureWebView()
+        configureBackNavigation()
+        cleanupOldShareFiles()
 
-            LaunchedEffect(golfViewModel.fullScreenEnabled, isDarkTheme) {
-                updateLayoutInDisplayCutoutMode(golfViewModel.fullScreenEnabled)
-                applySystemBarsVisibility(golfViewModel.fullScreenEnabled)
-            }
-
-            LaunchedEffect(Unit) {
-                if (intent?.data != null) {
-                    pendingImportUri = intent.data
-                    intent.data = null // Verhindert Re-Import beim Drehen
-                }
-            }
-            
-            MiniGolfTheme { 
-                Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) { 
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        MiniGolfApp(golfViewModel)
-
-                        // Import-Bestätigungs-Dialog
-                        pendingImportUri?.let { uri ->
-                            val buttonShape = RoundedCornerShape(20.dp)
-                            AlertDialog(
-                                onDismissRequest = { pendingImportUri = null },
-                                title = { Text("Notizen importieren?", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
-                                text = { Text("Möchtest du die Turniernotizen aus der gewählten Datei importieren?", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface)) },
-                                confirmButton = {
-                                    Button(
-                                        onClick = golfClick {
-                                            golfViewModel.importTournamentNotes(uri) { success, count ->
-                                                if (success) {
-                                                    Toast.makeText(this@MainActivity, "$count Notizen importiert!", Toast.LENGTH_SHORT).show()
-                                                    golfViewModel.currentScreen = Screen.TournamentHistory
-                                                } else {
-                                                    Toast.makeText(this@MainActivity, "Import fehlgeschlagen.", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
-                                            pendingImportUri = null
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                                        shape = buttonShape,
-                                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
-                                    ) {
-                                        Text("Importieren", color = Color.White, fontWeight = FontWeight.Bold, style = shadowStyle.copy(color = Color.White))
-                                    }
-                                },
-                                dismissButton = {
-                                    Button(
-                                        onClick = golfClick { pendingImportUri = null },
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                        shape = buttonShape,
-                                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
-                                    ) {
-                                        Text("Abbrechen", color = MaterialTheme.colorScheme.onSurface, style = shadowStyle.copy(color = MaterialTheme.colorScheme.onSurface))
-                                    }
-                                },
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                textContentColor = MaterialTheme.colorScheme.onSurface,
-                                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                                shape = RoundedCornerShape(24.dp)
-                            )
-                        }
-
-                        if (!golfViewModel.fullScreenEnabled) {
-                            val scrimAlpha = if (isDarkTheme) 0.4f else 0.6f
-                            val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = scrimAlpha) else Color.White.copy(alpha = scrimAlpha)
-
-                            Spacer(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .windowInsetsTopHeight(WindowInsets.statusBars)
-                                    .background(scrimColor)
-                                    .align(Alignment.TopCenter)
-                                    .zIndex(10000f)
-                            )
-
-                            Spacer(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .windowInsetsBottomHeight(WindowInsets.navigationBars)
-                                    .background(scrimColor)
-                                    .align(Alignment.BottomCenter)
-                                    .zIndex(10000f)
-                            )
-                        }
-                    }
-                } 
-            } 
+        if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
+            webView.loadUrl(START_URL)
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        val uri = intent.data
-        if (uri != null) {
-            golfViewModel.importTournamentNotes(uri) { success, count ->
-                if (success) {
-                    Toast.makeText(this, "$count Notizen importiert!", Toast.LENGTH_SHORT).show()
-                    golfViewModel.currentScreen = Screen.TournamentHistory
-                } else {
-                    Toast.makeText(this, "Import fehlgeschlagen.", Toast.LENGTH_SHORT).show()
+    @Suppress("SetJavaScriptEnabled")
+    private fun configureWebView() {
+        WebView.setWebContentsDebuggingEnabled(true)
+
+        val assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
+
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            allowFileAccess = false
+            allowContentAccess = true
+            @Suppress("DEPRECATION")
+            allowFileAccessFromFileURLs = false
+            @Suppress("DEPRECATION")
+            allowUniversalAccessFromFileURLs = false
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            mediaPlaybackRequiresUserGesture = true
+            setSupportMultipleWindows(false)
+            userAgentString = "$userAgentString MiniGolfAndroidWrapper/0.3-pwa"
+        }
+
+        CookieManager.getInstance().apply {
+            setAcceptCookie(true)
+            setAcceptThirdPartyCookies(webView, false)
+        }
+
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.SAFE_BROWSING_ENABLE)) {
+            androidx.webkit.WebSettingsCompat.setSafeBrowsingEnabled(webView.settings, true)
+        }
+
+        configureNativeMessageBridge()
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest): WebResourceResponse? {
+                return assetLoader.shouldInterceptRequest(request.url)
+            }
+
+            @Suppress("DEPRECATION")
+            override fun shouldInterceptRequest(view: WebView?, url: String): WebResourceResponse? {
+                return assetLoader.shouldInterceptRequest(Uri.parse(url))
+            }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest): Boolean {
+                val uri = request.url
+                val host = uri.host.orEmpty().lowercase(Locale.ROOT)
+
+                if (host == "appassets.androidplatform.net") return false
+                if (host == "script.google.com" || host == "script.googleusercontent.com" || host.endsWith(".googleusercontent.com")) {
+                    return false
+                }
+
+                if (!request.isForMainFrame) return false
+                return openExternal(uri)
+            }
+
+            @Suppress("DEPRECATION")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String): Boolean {
+                val uri = Uri.parse(url)
+                val host = uri.host.orEmpty().lowercase(Locale.ROOT)
+                if (host == "appassets.androidplatform.net" || host == "script.google.com" || host.endsWith(".googleusercontent.com")) {
+                    return false
+                }
+                return openExternal(uri)
+            }
+
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                progressBar.isVisible = true
+                errorPanel.isVisible = false
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                if (progressBar.progress >= 100) progressBar.isVisible = false
+            }
+
+            override fun onReceivedError(view: WebView?, request: WebResourceRequest, error: WebResourceError) {
+                if (request.isForMainFrame) {
+                    errorText.text = "Die lokale MiniGolf-App konnte nicht geladen werden.\n\n${error.description}"
+                    errorPanel.isVisible = true
                 }
             }
-            intent.data = null
         }
-    }
 
-    private fun updateLayoutInDisplayCutoutMode(fullScreen: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val layoutMode = if (fullScreen) {
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                progressBar.progress = newProgress
+                progressBar.isVisible = newProgress < 100
+            }
+
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                Log.d(TAG, "JS ${consoleMessage.messageLevel()}: ${consoleMessage.message()} (${consoleMessage.sourceId()}:${consoleMessage.lineNumber()})")
+                return true
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>,
+                fileChooserParams: FileChooserParams
+            ): Boolean {
+                this@MainActivity.fileChooserCallback?.onReceiveValue(null)
+                this@MainActivity.fileChooserCallback = filePathCallback
+                launchFileChooser(fileChooserParams)
+                return true
+            }
+        }
+
+        webView.setDownloadListener { url, _, _, _, _ ->
+            if (url.startsWith("blob:") || url.startsWith("data:")) {
+                Toast.makeText(this, "Export wird vorbereitet …", Toast.LENGTH_SHORT).show()
             } else {
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+                openExternal(Uri.parse(url))
             }
-            window.attributes.layoutInDisplayCutoutMode = layoutMode
         }
     }
 
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            val prefs = getSharedPreferences("minigolf_prefs", MODE_PRIVATE)
-            val fullScreen = prefs.getBoolean("full_screen_enabled", true)
-            applySystemBarsVisibility(fullScreen)
+    private fun configureNativeMessageBridge() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            Toast.makeText(this, "Bitte Android System WebView aktualisieren.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        WebViewCompat.addWebMessageListener(
+            webView,
+            "MiniGolfNative",
+            setOf(APP_ORIGIN)
+        ) { _, message, sourceOrigin, isMainFrame, replyProxy ->
+            val trustedOrigin = sourceOrigin.scheme == "https" && sourceOrigin.host == "appassets.androidplatform.net"
+            if (!isMainFrame || !trustedOrigin) return@addWebMessageListener
+            lifecycleScope.launch {
+                val packet = runCatching {
+                    withContext(Dispatchers.Default) { decodeNativePacket(message) }
+                }.getOrElse { error ->
+                    reply(replyProxy, "", false, error.message ?: "Ungültige Android-Anfrage.")
+                    return@launch
+                }
+                handleNativePacket(packet, replyProxy)
+            }
         }
     }
 
-    private fun applySystemBarsVisibility(fullScreen: Boolean) {
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        
-        // Den Standard-Dim-Schleier des Dialogs global entfernen, damit unser Scrim wirkt
-        window.setDimAmount(0f)
-        
-        val isDarkTheme = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    private fun decodeNativePacket(message: WebMessageCompat): NativePacket {
+        return when (message.type) {
+            WebMessageCompat.TYPE_ARRAY_BUFFER -> {
+                val packet = message.arrayBuffer
+                require(packet.size >= 4) { "Binärpaket ist zu kurz." }
+                val headerLength = ByteBuffer.wrap(packet, 0, 4).order(ByteOrder.BIG_ENDIAN).int
+                require(headerLength in 2..65536 && 4 + headerLength <= packet.size) { "Ungültiger Paketkopf." }
+                val header = JSONObject(String(packet, 4, headerLength, StandardCharsets.UTF_8))
+                val bytes = packet.copyOfRange(4 + headerLength, packet.size)
+                packetFromJson(header, bytes)
+            }
+            else -> {
+                val json = JSONObject(message.data ?: "{}")
+                val bytes = json.optString("dataBase64").takeIf { it.isNotBlank() }?.let {
+                    Base64.decode(it, Base64.DEFAULT)
+                }
+                packetFromJson(json, bytes)
+            }
+        }
+    }
 
-        if (fullScreen) {
-            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+    private fun packetFromJson(json: JSONObject, bytes: ByteArray?): NativePacket {
+        require(bytes == null || bytes.size <= MAX_NATIVE_TRANSFER_BYTES) { "Datei ist größer als 24 MB." }
+        val action = json.optString("action").take(40)
+        val textLimit = if (action == "migrationResult") 500_000 else 5_000
+        return NativePacket(
+            requestId = json.optString("requestId").take(160),
+            action = action,
+            fileName = sanitizeFileName(json.optString("fileName", "MiniGolf_Datei")),
+            mimeType = json.optString("mimeType", "application/octet-stream").take(120),
+            title = json.optString("title", "MiniGolf teilen").take(200),
+            text = json.optString("text").take(textLimit),
+            bytes = bytes,
+            json = json
+        )
+    }
+
+    private fun handleNativePacket(packet: NativePacket, replyProxy: JavaScriptReplyProxy) {
+        when (packet.action) {
+            "saveFile" -> startSaveFile(packet, replyProxy)
+            "shareFile" -> shareFile(packet, replyProxy)
+            "shareText" -> shareText(packet, replyProxy)
+            "migrationInfo" -> migrationCoordinator.sendInfo(packet.requestId, replyProxy)
+            "startMigration" -> migrationCoordinator.start(packet.requestId, replyProxy)
+            "migrationResult" -> migrationCoordinator.acceptResult(packet.requestId, packet.text, replyProxy)
+            "setKeepScreenOn" -> setKeepScreenOn(packet, replyProxy)
+            else -> reply(replyProxy, packet.requestId, false, "Unbekannte Android-Aktion.")
+        }
+    }
+
+    private fun setKeepScreenOn(packet: NativePacket, replyProxy: JavaScriptReplyProxy) {
+        val enabled = packet.json.optBoolean("enabled", false)
+        runOnUiThread {
+            if (enabled) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+        reply(replyProxy, packet.requestId, true, "KeepScreenOn auf $enabled gesetzt.")
+    }
+
+    private fun startSaveFile(packet: NativePacket, replyProxy: JavaScriptReplyProxy) {
+        if (packet.bytes == null) {
+            reply(replyProxy, packet.requestId, false, "Dateidaten fehlen.")
+            return
+        }
+        if (pendingSave != null) {
+            reply(replyProxy, packet.requestId, false, "Ein Speichervorgang läuft bereits.")
+            return
+        }
+        pendingSave = PendingSave(packet, replyProxy)
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = packet.mimeType.ifBlank { "application/octet-stream" }
+            putExtra(Intent.EXTRA_TITLE, packet.fileName)
+        }
+        saveDocumentLauncher.launch(intent)
+    }
+
+    private fun shareFile(packet: NativePacket, replyProxy: JavaScriptReplyProxy) {
+        val bytes = packet.bytes
+        if (bytes == null) {
+            reply(replyProxy, packet.requestId, false, "Dateidaten fehlen.")
+            return
+        }
+
+        lifecycleScope.launch {
+            val uri = withContext(Dispatchers.IO) {
+                val folder = File(cacheDir, "shares").apply { mkdirs() }
+                val target = File(folder, packet.fileName)
+                target.writeBytes(bytes)
+                FileProvider.getUriForFile(this@MainActivity, "$packageName.fileprovider", target)
+            }
+
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = packet.mimeType.ifBlank { "application/octet-stream" }
+                putExtra(Intent.EXTRA_STREAM, uri)
+                if (packet.text.isNotBlank()) putExtra(Intent.EXTRA_TEXT, packet.text)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = ClipData.newRawUri(packet.fileName, uri)
+            }
+            startActivity(Intent.createChooser(intent, packet.title.ifBlank { "MiniGolf teilen" }))
+            reply(replyProxy, packet.requestId, true, "Teilen geöffnet.")
+        }
+    }
+
+    private fun shareText(packet: NativePacket, replyProxy: JavaScriptReplyProxy) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, packet.title)
+            putExtra(Intent.EXTRA_TEXT, packet.text)
+        }
+        startActivity(Intent.createChooser(intent, packet.title.ifBlank { "MiniGolf teilen" }))
+        reply(replyProxy, packet.requestId, true, "Teilen geöffnet.")
+    }
+
+    private fun reply(
+        proxy: JavaScriptReplyProxy,
+        requestId: String,
+        ok: Boolean,
+        message: String,
+        data: JSONObject? = null
+    ) {
+        val response = JSONObject()
+            .put("requestId", requestId)
+            .put("ok", ok)
+            .put("message", message)
+        if (data != null) response.put("data", data)
+        proxy.postMessage(response.toString())
+    }
+
+    private fun launchFileChooser(params: WebChromeClient.FileChooserParams) {
+        val accepts = params.acceptTypes.map { it.lowercase(Locale.ROOT) }
+        val acceptsImages = accepts.isEmpty() || accepts.any { it.isBlank() || it == "*/*" || it.startsWith("image/") }
+        val cameraIntent = if (acceptsImages) createCameraIntent() else null
+
+        if (params.isCaptureEnabled && cameraIntent != null) {
+            fileChooserLauncher.launch(cameraIntent)
+            return
+        }
+
+        val contentIntent = runCatching { params.createIntent() }.getOrElse {
+            Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = accepts.firstOrNull { it.contains('/') && it != "*/*" } ?: "*/*"
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.mode == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE)
+            }
+        }
+
+        val chooser = Intent.createChooser(contentIntent, "Datei wählen")
+        if (cameraIntent != null) chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
+        fileChooserLauncher.launch(chooser)
+    }
+
+    private fun createCameraIntent(): Intent? {
+        val folder = File(cacheDir, "camera").apply { mkdirs() }
+        val file = File.createTempFile("minigolf_", ".jpg", folder)
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, uri)
+            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            clipData = ClipData.newRawUri("MiniGolf Foto", uri)
+        }
+        return if (intent.resolveActivity(packageManager) != null) {
+            cameraOutputUri = uri
+            intent
         } else {
-            windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
-            windowInsetsController.isAppearanceLightStatusBars = !isDarkTheme
-            windowInsetsController.isAppearanceLightNavigationBars = !isDarkTheme
+            file.delete()
+            null
         }
     }
-}
 
-data class FlyingScoreInfo(val score: Int?, val start: Offset, val end: Offset, val playerIndex: Int, val roundIndex: Int, val holeIndex: Int)
+    private fun openExternal(uri: Uri): Boolean {
+        return runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
+            true
+        }.getOrElse {
+            Toast.makeText(this, "Link konnte nicht geöffnet werden.", Toast.LENGTH_SHORT).show()
+            true
+        }
+    }
 
-@Composable
-fun MiniGolfApp(viewModel: GolfViewModel) {
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val focusManager = LocalFocusManager.current
-
-    var selectedHolePlayerRound by remember { mutableStateOf<Triple<Int, Int, Int>?>(null) }
-    var tapOffset by remember { mutableStateOf(Offset.Zero) }
-    var editPlayerIndex by remember { mutableStateOf<Int?>(null) }
-    var showAddPlayerDialog by remember { mutableStateOf(false) }
-    var showWinnerDialog by remember { mutableStateOf(false) }
-    var showSideMenu by remember { mutableStateOf(false) }
-    var showSettingsDialog by remember { mutableStateOf(false) }
-    var showInfoDialog by remember { mutableStateOf(false) }
-    var showBackgroundEdit by remember { mutableStateOf(false) }
-    var tempEditPath by remember { mutableStateOf<String?>(null) }
-    var flyingScore by remember { mutableStateOf<FlyingScoreInfo?>(null) }
-    var isBadgeTransitioning by remember { mutableStateOf(false) }
-
-    val activeGames by viewModel.activeGames.collectAsState()
-
-    val pickMedia = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            showSettingsDialog = false // Einstellungen sofort schließen
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val bytes = inputStream.readBytes()
-                val path = viewModel.saveByteArrayToInternalStorage(bytes, "temp_pick_")
-                if (path != null) {
-                    tempEditPath = path
-                    showBackgroundEdit = true
-                }
+    private fun configureBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (webView.canGoBack()) webView.goBack() else finish()
             }
+        })
+    }
+
+    private fun cleanupOldShareFiles() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val cutoff = System.currentTimeMillis() - 24L * 60L * 60L * 1000L
+            File(cacheDir, "shares").listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.delete() }
         }
     }
 
-    if (viewModel.currentScreen != Screen.Main || showSideMenu || showWinnerDialog || isBadgeTransitioning) {
-        BackHandler { 
-            if (showSideMenu) showSideMenu = false 
-            else if (showWinnerDialog) showWinnerDialog = false
-            else if (!isBadgeTransitioning) viewModel.onBackPressed() 
+    private fun sanitizeFileName(value: String): String {
+        val cleaned = value.replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001F]"), "_").trim()
+        return cleaned.take(180).ifBlank { "MiniGolf_Datei" }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        webView.saveState(outState)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onDestroy() {
+        fileChooserCallback?.onReceiveValue(null)
+        fileChooserCallback = null
+        if (isFinishing) {
+            webView.stopLoading()
+            webView.webChromeClient = null
+            webView.webViewClient = WebViewClient()
+            webView.destroy()
         }
-    }
-
-    val screenHeight = with(density) { windowInfo.containerSize.height.toDp() }
-    val titleBarHeight = screenHeight * 0.08f
-    val dynamicSystemFontSize = (titleBarHeight.value * 0.22f).sp
-    val logoSize = titleBarHeight * 0.7f
-
-    val players = viewModel.players
-    val numRounds = remember(players) { players.firstOrNull()?.roundScores?.size ?: 1 }
-    val allFilled = remember(players) { players.isNotEmpty() && players.all { p -> p.roundScores.all { rs -> rs.all { it != null } } } }
-
-    LaunchedEffect(viewModel.keepScreenOn) {
-        (context as? Activity)?.window?.let { window ->
-            if (viewModel.keepScreenOn) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-    }
-
-    val shadowStyle = remember { 
-        TextStyle(
-            fontFamily = CalibriFontFamily,
-            shadow = Shadow(color = Color.Black.copy(alpha = 0.5f), offset = Offset(2f, 2f), blurRadius = 3f)
-        ) 
-    }
-    val highlightAmber = Color(0xFFFFB300)
-    val highlightGold = Color(0xFFFFD54F)
-
-    val isOverlayVisible = showSideMenu || selectedHolePlayerRound != null || editPlayerIndex != null ||
-            showAddPlayerDialog || showWinnerDialog || showSettingsDialog || showInfoDialog ||
-            viewModel.updateAvailable != null
-
-    val currentBlurRadius by animateDpAsState(
-        targetValue = if (isOverlayVisible || isBadgeTransitioning) 12.dp else 0.dp,
-        animationSpec = tween(if (isBadgeTransitioning) 450 else 300), 
-        label = "blur"
-    )
-
-    val scrimAlpha by animateFloatAsState(
-        targetValue = if (isOverlayVisible || isBadgeTransitioning) 0.3f else 0f,
-        animationSpec = tween(if (isBadgeTransitioning) 450 else 300), 
-        label = "scrim"
-    )
-
-    ProvideSafeSound(soundEnabled = viewModel.soundEnabled) {
-        ProvideSafeHaptic(hapticEnabled = viewModel.hapticEnabled) {
-            val haptic = LocalHapticFeedback.current
-            Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) { 
-                detectTapGestures(onTap = { 
-                    focusManager.clearFocus() 
-                }) 
-            }) {
-                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                    Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
-                        if (viewModel.customBackgroundUri != null) {
-                            AsyncImage(
-                                model = viewModel.customBackgroundUri,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Image(
-                                painter = painterResource(id = R.drawable.bg_minigolf),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .then(if (!viewModel.fullScreenEnabled) Modifier.systemBarsPadding() else Modifier)
-                                .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(currentBlurRadius) else Modifier),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            TopAppBar(
-                                selectedSystem = viewModel.selectedSystem, onSystemSelected = { viewModel.selectedSystem = it },
-                                currentLocation = viewModel.currentLocation, onLocationChanged = { viewModel.currentLocation = it },
-                                onLogoClick = { showSideMenu = true }, titleBarHeight = titleBarHeight, logoSize = logoSize,
-                                dynamicSystemFontSize = dynamicSystemFontSize, shadowStyle = shadowStyle
-                            )
-                            ScoreTable(
-                                players = players, numRounds = numRounds, selectedSystem = viewModel.selectedSystem,
-                                selectedHolePlayerRound = selectedHolePlayerRound,
-                                onUpdateScore = { pIdx, rIdx, hIdx, offset -> tapOffset = offset; selectedHolePlayerRound = Triple(pIdx, hIdx, rIdx) },
-                                onPlayerClick = { editPlayerIndex = it }, onAddPlayerClick = { showAddPlayerDialog = true },
-                                onMovePlayer = { from, to -> viewModel.movePlayer(from, to) }, onRemoveRound = { viewModel.removeRound(it) },
-                                onAddRound = { viewModel.addRound() }, shadowStyle = shadowStyle,
-                                highlightAmber = highlightAmber, highlightGold = highlightGold,
-                                isStatsActive = viewModel.isTurnierMode && viewModel.isStatsActive,
-                                saveWithStats = viewModel.saveWithStats,
-                                onSaveWithStatsChange = { viewModel.saveWithStats = it },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        if (scrimAlpha > 0f) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = scrimAlpha))
-                            )
-                        }
-                    }
-
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        if (!showSideMenu && viewModel.currentScreen == Screen.Main) {
-                            Box(modifier = Modifier.fillMaxHeight().width(30.dp).zIndex(1001f).pointerInput(Unit) {
-                                detectHorizontalDragGestures { _, dragAmount -> if (dragAmount > 10f) { showSideMenu = true; haptic.performHapticFeedback(HapticFeedbackType.LongPress) } }
-                            })
-                        }
-                        
-                        viewModel.updateAvailable?.let { info ->
-                            AlertDialog(
-                                onDismissRequest = { if (!viewModel.isDownloadingUpdate) viewModel.updateAvailable = null },
-                                title = { Text(stringResource(R.string.update_available_title), style = shadowStyle.copy(fontWeight = FontWeight.Bold)) },
-                                text = {
-                                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                                        Text(stringResource(R.string.update_available_message, info.version), style = shadowStyle)
-                                        if (!info.releaseNotes.isNullOrBlank()) {
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Text(stringResource(R.string.update_changes_label), fontWeight = FontWeight.Bold, style = shadowStyle.copy(fontSize = 12.sp))
-                                            Text(info.releaseNotes, style = shadowStyle.copy(fontSize = 12.sp))
-                                        }
-                                        if (viewModel.isDownloadingUpdate) {
-                                            Spacer(modifier = Modifier.height(16.dp))
-                                            LinearProgressIndicator(progress = { viewModel.downloadProgress }, modifier = Modifier.fillMaxWidth())
-                                            Text(stringResource(R.string.percentage_format, (viewModel.downloadProgress * 100).toInt()), modifier = Modifier.align(Alignment.End), style = shadowStyle.copy(fontSize = 11.sp))
-                                        }
-                                    }
-                                },
-                                confirmButton = {
-                                    if (!viewModel.isDownloadingUpdate) {
-                                        Button(onClick = golfClick { viewModel.startUpdate() }) { Text(stringResource(R.string.update_download_now), style = shadowStyle) }
-                                    }
-                                },
-                                dismissButton = {
-                                    if (!viewModel.isDownloadingUpdate) {
-                                        TextButton(onClick = golfClick { viewModel.updateAvailable = null }) { Text(stringResource(R.string.update_download_later), style = shadowStyle) }
-                                    }
-                                }
-                            )
-                        }
-
-                        if (showWinnerDialog) {
-                            // Wir nutzen ein Box-Overlay für 100% Kontrolle über Helligkeit und Animation
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .zIndex(3000f)
-                                    .pointerInput(Unit) {
-                                        // "Klick daneben" zum Schließen
-                                        detectTapGestures { showWinnerDialog = false }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                WinnerCard(
-                                    allPlayers = players, selectedSystem = viewModel.selectedSystem, canAddRound = numRounds < 4,
-                                    animateEntry = false, // Wichtig für den nahtlosen Übergang
-                                    onNewGame = { viewModel.saveGame(isCompleted = false); viewModel.restartGame(); showWinnerDialog = false },
-                                    onShare = {
-                                        val playerScores = players.map { p -> PlayerScore(p.name, p.color.toArgb(), p.roundScores.flatten().filterNotNull().sum(), p.roundScores.map { it.filterNotNull().sum() }, p.roundScores.map { it.all { s -> s != null } }, p.roundScores) }
-                                        val bmp = generateBitmapFromData(context, playerScores, viewModel.selectedSystem, viewModel.currentLocation, System.currentTimeMillis())
-                                        shareBitmap(context, bmp)
-                                        showWinnerDialog = false
-                                    },
-                                    onNextRound = { viewModel.addRound(); showWinnerDialog = false },
-                                    onResetAll = { viewModel.saveGame(true); viewModel.resetAll(); showWinnerDialog = false },
-                                    onDismiss = { showWinnerDialog = false })
-                            }
-                        }
-
-                        // Gewinner-Badge am rechten Rand, wenn das Spiel fertig ist
-                        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                            val screenWidthPx = constraints.maxWidth.toFloat()
-                            
-                            val transitionProgress by animateFloatAsState(
-                                targetValue = if (isBadgeTransitioning || showWinnerDialog) 1f else 0f,
-                                animationSpec = tween(450, easing = FastOutSlowInEasing),
-                                label = "badge_transition",
-                                finishedListener = {
-                                    if (it == 1f && isBadgeTransitioning) {
-                                        showWinnerDialog = true
-                                        isBadgeTransitioning = false
-                                    } else if (it == 0f) {
-                                        isBadgeTransitioning = false
-                                    }
-                                }
-                            )
-
-                            // Sanfter Farbübergang von Gold zu Weiß
-                            val badgeColor by animateColorAsState(
-                                targetValue = if (isBadgeTransitioning) Color.White else Color(0xFFFFD700),
-                                animationSpec = tween(450),
-                                label = "badge_color"
-                            )
-
-                            // Maße berechnen für den Übergang
-                            val badgeWidth = 50.dp
-                            val badgeHeight = 70.dp
-                            val targetWidth = with(LocalDensity.current) { (screenWidthPx * 0.9f).toDp() }
-                            // Wir schätzen die Höhe der WinnerCard
-                            val targetHeight = 450.dp 
-
-                            if ((allFilled && !showWinnerDialog && viewModel.currentScreen == Screen.Main) || isBadgeTransitioning) {
-                                Surface(
-                                    onClick = golfClick { isBadgeTransitioning = true },
-                                    color = badgeColor,
-                                    shape = RoundedCornerShape(
-                                        topStart = 28.dp,
-                                        bottomStart = 28.dp,
-                                        topEnd = (28 * transitionProgress).dp,
-                                        bottomEnd = (28 * transitionProgress).dp
-                                    ),
-                                    shadowElevation = (8 * (1f - transitionProgress)).dp,
-                                    modifier = Modifier
-                                        .align(Alignment.CenterEnd)
-                                        .offset {
-                                            IntOffset(
-                                                x = (-(screenWidthPx / 2f - with(density) { (targetWidth / 2f).toPx() }) * transitionProgress).roundToInt(),
-                                                y = 0
-                                            )
-                                        }
-                                        .size(
-                                            width = lerp(badgeWidth, targetWidth, transitionProgress),
-                                            height = lerp(badgeHeight, targetHeight, transitionProgress)
-                                        )
-                                        .zIndex(2000f)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                        val iconAlpha = 1f - transitionProgress
-                                        if (iconAlpha > 0.01f) {
-                                            Icon(
-                                                imageVector = Icons.Default.EmojiEvents,
-                                                contentDescription = null,
-                                                tint = Color.Black.copy(alpha = 0.2f * iconAlpha),
-                                                modifier = Modifier.size(32.dp).offset(1.5.dp, 1.5.dp).alpha(iconAlpha)
-                                            )
-                                            Icon(
-                                                imageVector = Icons.Default.EmojiEvents,
-                                                contentDescription = "Ergebnisse anzeigen",
-                                                tint = if (isBadgeTransitioning) Color(0xFFFFD700).copy(alpha = iconAlpha) else Color.White,
-                                                modifier = Modifier.size(32.dp).alpha(iconAlpha)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (selectedHolePlayerRound != null) {
-                            val (pIdx, hIdx, rIdx) = selectedHolePlayerRound!!
-                            ScoreInputDialog(currentScore = players[pIdx].roundScores[rIdx][hIdx], offset = tapOffset, onDismiss = { selectedHolePlayerRound = null }, onScoreSelected = { score, btnOffset -> flyingScore = FlyingScoreInfo(score, btnOffset, tapOffset, pIdx, rIdx, hIdx); selectedHolePlayerRound = null })
-                        }
-                        if (editPlayerIndex != null) {
-                            EditPlayerDialog(player = players[editPlayerIndex!!], shadowStyle = shadowStyle, onDismiss = { editPlayerIndex = null }, onSave = { name, color -> viewModel.updatePlayer(editPlayerIndex!!, name, color); editPlayerIndex = null }, onRemove = { viewModel.removePlayer(editPlayerIndex!!); editPlayerIndex = null }, canRemove = players.size > 1)
-                        }
-                        if (showAddPlayerDialog) {
-                            AddPlayerDialog(playerCount = players.size, shadowStyle = shadowStyle, onDismiss = { showAddPlayerDialog = false }, onAdd = { name, color -> viewModel.addPlayer(name, color); showAddPlayerDialog = false })
-                        }
-                        if (showSettingsDialog) {
-                            AppSettingsDialog(
-                                hapticEnabled = viewModel.hapticEnabled,
-                                soundEnabled = viewModel.soundEnabled,
-                                keepScreenOn = viewModel.keepScreenOn,
-                                fullScreenEnabled = viewModel.fullScreenEnabled,
-                                customBackgroundUri = viewModel.customBackgroundUri,
-                                shadowStyle = shadowStyle,
-                                onHapticToggle = { viewModel.toggleHaptic(it) },
-                                onSoundToggle = { viewModel.toggleSound(it) },
-                                onKeepScreenOnToggle = { viewModel.toggleKeepScreenOn(it) },
-                                onFullScreenToggle = { viewModel.toggleFullScreen(it) },
-                                onSelectBackground = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                                onResetBackground = { viewModel.setCustomBackground(null) },
-                                onDismiss = { showSettingsDialog = false },
-                                onShowInfo = { showSettingsDialog = false; showInfoDialog = true }
-                            )
-                        }
-                        if (showBackgroundEdit && (tempEditPath != null || viewModel.customBackgroundUri != null)) {
-                            BackgroundImageEditScreen(
-                                imagePath = tempEditPath ?: viewModel.customBackgroundUri!!,
-                                fullScreenEnabled = viewModel.fullScreenEnabled,
-                                onDismiss = { 
-                                    showBackgroundEdit = false
-                                    tempEditPath = null 
-                                    showSettingsDialog = true 
-                                },
-                                onSave = { data ->
-                                    val path = viewModel.saveByteArrayToInternalStorage(data, "bg_custom_")
-                                    if (path != null) {
-                                        viewModel.setCustomBackground(path)
-                                    }
-                                    showBackgroundEdit = false
-                                    tempEditPath = null
-                                    showSettingsDialog = true
-                                }
-                            )
-                        }
-                        if (showInfoDialog) {
-                            AppInfoDialog(
-                                appVersion = viewModel.appVersion,
-                                shadowStyle = shadowStyle,
-                                onDismiss = { showInfoDialog = false }
-                            )
-                        }
-                        NavigationDrawer(
-                            showSideMenu = showSideMenu,
-                            onDismiss = { showSideMenu = false },
-                            playerCount = players.size,
-                            numRounds = numRounds,
-                            activeGamesCount = activeGames.size,
-                            hapticEnabled = viewModel.hapticEnabled,
-                            fullScreenEnabled = viewModel.fullScreenEnabled,
-                            isTurnierMode = viewModel.isTurnierMode,
-                            onAddPlayerClick = { showAddPlayerDialog = true; showSideMenu = false },
-                            onShowResultsClick = { showWinnerDialog = true; showSideMenu = false },
-                            onHistoryClick = { viewModel.currentScreen = Screen.History; showSideMenu = false },
-                            onActiveGamesClick = { viewModel.currentScreen = Screen.ActiveGames; showSideMenu = false },
-                            onTournamentClick = { viewModel.currentScreen = Screen.TournamentSelection; showSideMenu = false },
-                            onNextRoundClick = { viewModel.addRound(); showSideMenu = false },
-                            onNewGameClick = { viewModel.saveGame(isCompleted = false); viewModel.restartGame(); showSideMenu = false },
-                            onEndGameClick = { viewModel.saveGame(true); viewModel.resetAll(); showSideMenu = false },
-                            onTurnierModeToggle = { viewModel.toggleTurnierMode(it) },
-                            onShowSettings = { showSideMenu = false; showSettingsDialog = true },
-                            allFilled = allFilled
-                        )
-                        flyingScore?.let { info -> FlyingScoreElement(info = info, shadowStyle = shadowStyle, onAnimationFinished = { viewModel.updateScore(info.playerIndex, info.roundIndex, info.holeIndex, info.score); flyingScore = null }) }
-                    }
-                }
-
-                AnimatedVisibility(visible = viewModel.currentScreen == Screen.History, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                    HistoryScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, fullScreenEnabled = viewModel.fullScreenEnabled)
-                }
-
-                AnimatedVisibility(visible = viewModel.currentScreen == Screen.ActiveGames, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                    ActiveGamesScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, fullScreenEnabled = viewModel.fullScreenEnabled)
-                }
-
-                TournamentThemeWrapper(theme = viewModel.tournamentTheme) {
-                    AnimatedVisibility(visible = viewModel.currentScreen == Screen.TournamentSelection, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                        TournamentSelectionScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onNewNote = { viewModel.resetTournamentNotes(); viewModel.currentScreen = Screen.TournamentTable }, onShowHistory = { viewModel.currentScreen = Screen.TournamentHistory }, fullScreenEnabled = viewModel.fullScreenEnabled)
-                    }
-                    AnimatedVisibility(visible = viewModel.currentScreen == Screen.TournamentTable, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                        TournamentScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onSaveFinished = { viewModel.onBackPressed() }, fullScreenEnabled = viewModel.fullScreenEnabled)
-                    }
-                    AnimatedVisibility(visible = viewModel.currentScreen == Screen.TournamentHistory, enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(), exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()) {
-                        TournamentHistoryScreen(viewModel = viewModel, onBack = { viewModel.onBackPressed() }, onEdit = { result -> viewModel.loadTournamentNote(result) }, fullScreenEnabled = viewModel.fullScreenEnabled)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun FlyingScoreElement(info: FlyingScoreInfo, shadowStyle: TextStyle, onAnimationFinished: () -> Unit) {
-    val progress = remember { Animatable(0f) }
-    val density = LocalDensity.current
-    LaunchedEffect(info) { progress.animateTo(targetValue = 1f, animationSpec = tween(450, easing = FastOutSlowInEasing)); onAnimationFinished() }
-    val currentX = info.start.x + (info.end.x - info.start.x) * progress.value
-    val currentY = info.start.y + (info.end.y - info.start.y) * progress.value
-    val halfSizePx = with(density) { 20.dp.toPx() }
-    Box(modifier = Modifier.offset { IntOffset((currentX - halfSizePx).roundToInt(), (currentY - halfSizePx).roundToInt()) }.size(40.dp).alpha(1f - 0.2f * progress.value).scale(1.4f - 0.4f * progress.value).zIndex(2000f), contentAlignment = Alignment.Center) {
-        Text(text = info.score?.toString() ?: "", style = shadowStyle.copy(color = Color.Black, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold))
+        super.onDestroy()
     }
 }

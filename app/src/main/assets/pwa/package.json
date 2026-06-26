@@ -1,0 +1,9 @@
+{
+  "name": "minigolf-pwa-google-drive-test",
+  "private": true,
+  "version": "84.0.0-drive-transfer-checklist1",
+  "description": "Lokale MiniGolf-PWA-Testumgebung mit Google Apps Script und Google Drive",
+  "scripts": {
+    "start": "node dev-server.js --port=8092"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "latestVersion": "84",
+  "releases": [
+    {
+      "version": "84",
+      "date": "2026-06-22",
+      "title": "Deckende Dropdown-Menüs",
+      "summary": "Anlagentyp und Rundenauswahl verdecken den Spielhintergrund jetzt vollständig wie in der nativen App.",
+      "changes": [
+        "Das Anlagentyp-/Spieltyp-Menü oben rechts besitzt jetzt eine vollständig deckende weiße Oberfläche.",
+        "Die Rundenauswahl oben links besitzt jetzt ebenfalls eine vollständig deckende weiße Oberfläche.",
+        "Das Hintergrundbild schimmert in beiden Dropdown-Menüs nicht mehr durch.",
+        "Der Changelog wird vor der Aktualisierung angezeigt; lokale Spielstände und Einstellungen bleiben unberührt."
+      ]
+    },
+    {
+      "version": "83",
+      "date": "2026-06-22",
+      "title": "Changelog und Update-Informationen",
+      "summary": "Updates erklären jetzt bereits vor der Installation, welche Änderungen enthalten sind.",
+      "changes": [
+        "Der Update-Hinweis zeigt Versionsnummer, Zusammenfassung und die enthaltenen Neuerungen.",
+        "Der Changelog ist dauerhaft über App-Info abrufbar.",
+        "Die Dropdown-Darstellung wurde für die weitere native Angleichung vereinheitlicht.",
+        "Lokale Spielstände, Einstellungen und IndexedDB-Daten bleiben bei Updates weiterhin unberührt."
+      ]
+    },
+    {
+      "version": "82",
+      "date": "2026-06-22",
+      "title": "Sichere PWA-Updates",
+      "summary": "Neue App-Versionen lassen sich ohne Löschen der Websitedaten installieren.",
+      "changes": [
+        "Automatische Updateprüfung beim Start, beim Zurückkehren in die App und stündlich.",
+        "Neue Versionen werden erst nach Bestätigung aktiviert.",
+        "Alte App-Caches werden entfernt, lokale Nutzerdaten aber nicht gelöscht.",
+        "App-Dateien bleiben während eines Versionswechsels konsistent."
+      ]
+    }
+  ]
+}

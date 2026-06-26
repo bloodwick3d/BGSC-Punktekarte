@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - pwa-test-migration
     tags:
       - '[0-9]*'    # Tags für normale Releases (z.B. 1.0.0)
       - '*-beta*'   # Tags für Beta-Versionen (z.B. 1.1.0-beta1)

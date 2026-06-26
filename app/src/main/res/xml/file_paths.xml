@@ -3,5 +3,6 @@
     <cache-path name="my_images" path="images/" />
     <cache-path name="my_updates" path="updates/" />
     <cache-path name="my_exports" path="exports/" />
+    <cache-path name="shares" path="shares/" />
     <external-cache-path name="my_external_images" path="images/" />
 </paths>

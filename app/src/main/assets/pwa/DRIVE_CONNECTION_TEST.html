@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+<link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MiniGolf Drive-Verbindung testen</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, sans-serif; color-scheme: light dark; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #eef3f7; color: #16202a; }
+    main { width: min(560px, calc(100% - 32px)); padding: 24px; border-radius: 18px; background: #fff; box-shadow: 0 12px 35px rgba(0,0,0,.14); }
+    h1 { margin-top: 0; font-size: 1.35rem; }
+    button { border: 0; border-radius: 999px; padding: 12px 18px; font-weight: 700; cursor: pointer; background: #1565c0; color: #fff; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; border-radius: 12px; background: #f2f5f8; min-height: 72px; }
+    .ok { color: #157a36; }
+    .error { color: #b3261e; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Google-Drive-Verbindung</h1>
+  <p>Dieser Test sendet einen formularbasierten Ping an die Apps-Script-Web-App. Es wird keine Turniernotiz hochgeladen.</p>
+  <button id="testButton" type="button">Verbindung testen</button>
+  <pre id="result">Noch nicht getestet.</pre>
+</main>
+<script src="drive-config.js"></script>
+<script src="drive-form-client-v5.js"></script>
+<script>
+  const result = document.getElementById('result');
+  const button = document.getElementById('testButton');
+  async function runTest() {
+    button.disabled = true;
+    result.className = '';
+    result.textContent = 'POST-Verbindung wird geprüft …';
+    try {
+      const response = await window.MiniGolfDriveBridge.ping();
+      result.className = 'ok';
+      result.textContent = 'Verbindung erfolgreich.\n\n' + JSON.stringify(response, null, 2);
+    } catch (error) {
+      result.className = 'error';
+      result.textContent = 'Verbindung fehlgeschlagen.\n\n' + (error.code ? error.code + ': ' : '') + error.message + '\n\nDiagnose:\n' + JSON.stringify(window.MiniGolfDriveBridge.getDiagnostics(), null, 2);
+    } finally {
+      button.disabled = false;
+    }
+  }
+  button.addEventListener('click', runTest);
+</script>
+</body>
+</html>
