@@ -234,6 +234,7 @@ class MainActivity : androidx.activity.ComponentActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 if (progressBar.progress >= 100) progressBar.isVisible = false
+                injectShareShim()
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest, error: WebResourceError) {
@@ -502,6 +503,50 @@ class MainActivity : androidx.activity.ComponentActivity() {
     private fun sanitizeFileName(value: String): String {
         val cleaned = value.replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001F]"), "_").trim()
         return cleaned.take(180).ifBlank { "MiniGolf_Datei" }
+    }
+
+    private fun injectShareShim() {
+        webView.evaluateJavascript("""
+            (function() {
+                if (navigator.share && !navigator._nativeShare) {
+                    navigator._nativeShare = navigator.share;
+                }
+                navigator.share = function(data) {
+                    if (!data) return Promise.reject(new Error('No data to share'));
+                    return new Promise((resolve, reject) => {
+                        const requestId = 'share_' + Date.now();
+                        const packet = {
+                            requestId: requestId,
+                            action: 'shareFile',
+                            title: data.title || '',
+                            text: data.text || '',
+                            fileName: 'MiniGolf_Export.mgpk',
+                            mimeType: 'application/octet-stream'
+                        };
+                        
+                        if (data.files && data.files.length > 0) {
+                            const file = data.files[0];
+                            packet.fileName = file.name || 'MiniGolf_Export.mgpk';
+                            const reader = new FileReader();
+                            reader.onload = function() {
+                                packet.dataBase64 = reader.result.split(',')[1];
+                                window.MiniGolfNative.postMessage(JSON.stringify(packet));
+                                resolve();
+                            };
+                            reader.onerror = () => reject(new Error('File reading failed'));
+                            reader.readAsDataURL(file);
+                        } else {
+                            packet.action = 'shareText';
+                            window.MiniGolfNative.postMessage(JSON.stringify(packet));
+                            resolve();
+                        }
+                    });
+                };
+                if (!navigator.canShare) {
+                    navigator.canShare = () => true;
+                }
+            })();
+        """.trimIndent(), null)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
